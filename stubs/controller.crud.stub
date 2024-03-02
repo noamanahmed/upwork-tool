@@ -1,0 +1,75 @@
+<?php
+
+namespace {{ namespace }} ;
+
+use App\Http\Requests\Store{{ modelName }}Request;
+use App\Http\Requests\Update{{ modelName }}Request;
+use App\Models\{{ modelName }};
+use App\Services\{{ modelName }}Service;
+
+class {{ class }} extends BaseController
+{
+    public function __construct(
+        private {{ modelName }}Service ${{ model }}Service
+    ){}
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        return $this->{{ model }}Service->index();
+    }
+
+
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function dropdown()
+    {
+        return $this->{{ model }}Service->dropdown();
+    }
+
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function dropdownForStatus()
+    {
+        return $this->{{ model }}Service->dropdownForStatus();
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Store{{ modelName }}Request $request)
+    {
+        return $this->{{ model }}Service->store($request->validated());
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show({{ modelName }} ${{ model }})
+    {
+        return $this->{{ model }}Service->get(${{ model }}->id);
+    }
+
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Update{{ modelName }}Request $request, {{ modelName }} ${{ model }})
+    {
+        return $this->{{ model }}Service->update(${{ model }}->id,$request->validated());
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy({{ modelName }} ${{ model }})
+    {
+        return $this->{{ model }}Service->delete(${{ model }}->id);
+    }
+}

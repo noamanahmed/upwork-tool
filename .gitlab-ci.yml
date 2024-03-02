@@ -1,0 +1,30 @@
+default:
+  image: lorisleiva/laravel-docker:latest
+  services:
+    - mysql:8.0
+
+variables:
+  MYSQL_DATABASE: testing
+  MYSQL_ROOT_PASSWORD: password
+  DB_HOST: mysql
+  MYSQL_USER: sail
+  MYSQL_PASSWORD: password
+  XDEBUG_MODE: "coverage"
+
+stages:
+  - test
+
+unit_test:
+  stage: test
+  script:
+    - cp .env.testing .env
+    - composer install
+    - php artisan key:generate
+    - php artisan --version
+    - php artisan route:list
+    - php artisan migrate:fresh --seed
+    - php artisan test --coverage-html=coverage/
+  artifacts:
+    paths:
+      - coverage/
+    expire_in: 30 days

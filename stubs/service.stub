@@ -1,0 +1,21 @@
+<?php
+
+
+namespace App\Services;
+
+use App\Enums\{{ modelName }}StatusEnum;
+use App\Repositories\{{ modelName }}Repository;
+use App\Transformers\{{ modelName }}CollectionTransformer;
+use App\Transformers\{{ modelName }}Transformer;
+
+class {{ modelName }}Service extends BaseService{
+
+    public function __construct(){
+        $this->repository = new {{ modelName }}Repository();
+        $this->transformer = new {{ modelName }}Transformer();
+        $this->collectionTransformer = new {{ modelName }}CollectionTransformer();
+        $this->statusMapperEnum = {{ modelName }}StatusEnum::class;
+    }
+
+}
+
