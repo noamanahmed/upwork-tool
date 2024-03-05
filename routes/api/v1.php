@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TranslationController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\LanguageController;
+use App\Http\Controllers\Api\V1\UpWorkController;
 use App\Models\Quotation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -54,31 +55,14 @@ Route::middleware(['auth:sanctum'])->group(function() {
     });
 
     Route::apiCrudResource('users',UserController::class);
-    Route::apiCrudResource('leads',LeadController::class);
-    Route::apiCrudResource('quotations',QuotationController::class);
     Route::get('users/type/dropdown',[UserController::class,'dropdownForType']);
     Route::apiCrudResource('roles',RoleController::class);
     Route::get('permissions',[PermissionController::class,'index']);
-    Route::get('locations/type/dropdown',[LocationController::class,'dropdownForType']);
-    Route::apiCrudResource('locations',LocationController::class);
-    Route::get('contracts/type/dropdown',[ContractController::class,'dropdownForType']);
-    Route::apiCrudResource('contracts',ContractController::class);
-    Route::get('companies/type/dropdown',[CompanyController::class,'dropdownForType']);
-    Route::apiCrudResource('companies',CompanyController::class);
-    Route::apiCrudResource('employers',EmployerController::class);
-    Route::apiCrudResource('employees',EmployeeController::class);
-    Route::apiCrudResource('skills',SkillController::class);
-    Route::get('products/type/dropdown',[ProductController::class,'dropdownForType']);
-    Route::apiCrudResource('products',ProductController::class);
-    Route::get('categories/type/dropdown',[CategoryController::class,'dropdownForType']);
-    Route::apiCrudResource('categories',CategoryController::class);
-    Route::apiCrudResource('customers',CustomerController::class);
-    Route::get('orders/type/dropdown',[OrderController::class,'dropdownForType']);
-    Route::apiCrudResource('orders',OrderController::class);
-    Route::get('tasks/work-type/dropdown',[TaskController::class,'dropdownForWorkType']);
-    Route::get('tasks/calendar',[TaskController::class,'calendar']);
-    Route::apiCrudResource('tasks',TaskController::class);
 });
+
+Route::get('/upwork/auth',[UpWorkController::class,'init']);
+Route::get('/upwork/code',[UpWorkController::class,'code']);
+Route::get('/upwork/jobs',[UpWorkController::class,'jobs']);
 
 Route::fallback(function(){
     abort(404);

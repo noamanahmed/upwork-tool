@@ -17,7 +17,8 @@
         "league/flysystem-aws-s3-v3": "^3.24",
         "meilisearch/meilisearch-php": "^1.6",
         "spatie/laravel-permission": "^6.3",
-        "spatie/laravel-query-builder": "^5.0"
+        "spatie/laravel-query-builder": "^5.0",
+        "upwork/php-upwork-oauth2": "^2.4"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.13",
