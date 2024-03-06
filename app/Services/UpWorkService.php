@@ -4,6 +4,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Arr;
 use Illuminate\Support\Fluent;
 
 class UpWorkService extends BaseService {
@@ -12,17 +13,19 @@ class UpWorkService extends BaseService {
     }
 
     public function init(){
-        $client = $this->getUpworkClient();
+        $client = $this->getUpworkClientForAuth();
         return redirect()->to($client->getServer()->getInstance()->getAuthorizationUrl());
     }
 
 
     public function code(){
 
-        $client = $this->getUpworkClient();
+        $client = $this->getUpworkClientForAuth();
+
         $accessToken = $client->getServer()->getInstance()->getAccessToken('authorization_code',[
             'code' => request()->get('code')
         ]);
+
         Setting::insertOrUpdate('access_token',$accessToken->getToken());
         Setting::insertOrUpdate('refresh_token',$accessToken->getRefreshToken());
         Setting::insertOrUpdate('expiry',$accessToken->getExpires());
@@ -51,16 +54,148 @@ class UpWorkService extends BaseService {
               searchType: \$searchType,
               sortAttributes: \$sortAttributes
             ) {
-              totalCount
-              edges {
-                node {
+                totalCount
+                edges {
+                  node {
                     id
                     title
                     ciphertext
+                    job {
+                      id
+                      workFlowState {
+                        status
+                        closeResult
+                      }
+                      ownership {
+                        team {
+                          id
+                          name
+                          type
+
+                        }
+                      }
+                      content {
+                        title
+                        description
+                      }
+                      contractorSelection {
+                        proposalRequirement {
+                          coverLetterRequired
+                          freelancerMilestonesAllowed
+                          screeningQuestions {
+                            sequenceNumber
+                            question
+                          }
+                        }
+                      }
+                      attachments {
+                        sequenceNumber
+                        id
+                        fileName
+                        fileSize
+                      }
+                      classification {
+                        category {
+                          id
+                          ontologyId
+                          definition
+                          preferredLabel
+                          type
+                        }
+                        subCategory {
+                          id
+                          ontologyId
+                          definition
+                          preferredLabel
+                          type
+                        }
+                        skills {
+                          id
+                          ontologyId
+                          definition
+                          preferredLabel
+                          type
+                        }
+                        additionalSkills {
+                          id
+                          ontologyId
+                          definition
+                          preferredLabel
+                          type
+                        }
+                      }
+                      segmentationData {
+                        segmentationValues {
+                          segmentationInfo {
+                            sortOrder
+                            id
+                            label
+                            referenceName
+                            skill {
+                              id
+                              ontologyId
+                              definition
+                              preferredLabel
+                              type
+                            }
+                            segmentationType {
+                              id
+                              name
+                              referenceName
+                            }
+                          }
+                        }
+                      }
+                      activityStat {
+                        applicationsBidStats {
+                          avgRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                          minRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                          maxRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                          avgInterviewedRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                        }
+                      }
+                    }
+                    client {
+                        totalHires
+                        totalPostedJobs
+                        totalReviews,
+                        totalFeedback
+                        totalSpent {
+                            rawValue
+                            displayValue
+                            currency
+                        }
+                        verificationStatus
+                        companyRid
+                        hasFinancialPrivacy
+                        companyName
+                        edcUserId
+                        memberSinceDateTime
+                    }
+                    teamId
+                    freelancerClientRelation {
+                        companyName
+                    }
+                  }
                 }
               }
-            }
-          }
+        }
         QUERY;
         $params['variables'] = [
             "searchType" => "JOBS_FEED",
@@ -73,6 +208,144 @@ class UpWorkService extends BaseService {
             ]
         ];
         $response = $graphql->execute($params);
+        // dd($response);
+        $data = $response->data;
+
+        $jobs = $data->marketplaceJobPostings->edges;
+        $ids = [];
+        foreach($jobs as $job)
+        {
+            $ids[] = (array) $job->node;
+        }
+        return $this->successfullApiResponse($ids);
+    }
+
+    public function job($upworkJobId)
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query marketplaceJobPosting(\$id: ID!) {
+            marketplaceJobPosting(id: \$id) {
+              id
+              workFlowState {
+                status
+                closeResult
+              }
+              ownership {
+                team {
+                  id
+                  nam1e
+                  type
+                  photoUrl
+                }
+              }
+              content {
+                title
+                description
+              }
+              contractorSelection {
+                proposalRequirement {
+                  coverLetterRequired
+                  freelancerMilestonesAllowed
+                  screeningQuestions {
+                    sequenceNumber
+                    question
+                  }
+                }
+              }
+              attachments {
+                sequenceNumber
+                id
+                fileName
+                fileSize
+              }
+              classification {
+                category {
+                  id
+                  ontologyId
+                  definition
+                  preferredLabel
+                  type
+                }
+                subCategory {
+                  id
+                  ontologyId
+                  definition
+                  preferredLabel
+                  type
+                }
+                skills {
+                  id
+                  ontologyId
+                  definition
+                  preferredLabel
+                  type
+                }
+                additionalSkills {
+                  id
+                  ontologyId
+                  definition
+                  preferredLabel
+                  type
+                }
+              }
+              segmentationData {
+                segmentationValues {
+                  segmentationInfo {
+                    sortOrder
+                    id
+                    label
+                    referenceName
+                    skill {
+                      id
+                      ontologyId
+                      definition
+                      preferredLabel
+                      type
+                    }
+                    segmentationType {
+                      id
+                      name
+                      referenceName
+                    }
+                  }
+                }
+              }
+              activityStat {
+                applicationsBidStats {
+                  avgRateBid {
+                    rawValue
+                    currency
+                    displayValue
+                  }
+                  minRateBid {
+                    rawValue
+                    currency
+                    displayValue
+                  }
+                  maxRateBid {
+                    rawValue
+                    currency
+                    displayValue
+                  }
+                  avgInterviewedRateBid {
+                    rawValue
+                    currency
+                    displayValue
+                  }
+                }
+              }
+            }
+          }
+        QUERY;
+        $params['variables'] = [
+            "id" => $upworkJobId,
+        ];
+        $response = $graphql->execute($params);
+        $response = json_decode(json_encode($response->data), true);
+        $response = Arr::dot($response);
+        dd($response);
         $data = $response->data;
         $jobs = $data->marketplaceJobPostings->edges;
         $ids = [];
@@ -83,7 +356,20 @@ class UpWorkService extends BaseService {
         return $this->successfullApiResponse($ids);
     }
 
-    public function getUpworkClient()
+    public function getUpworkClientForAuth($overrideOptions = [])
+    {
+        $options = [
+            'clientId'          => config('upwork.client_id'),
+            'clientSecret'      => config('upwork.client_secret'),
+            'redirectUri'       => config('upwork.redirect_uri').'/upwork/code',
+        ];
+
+        $config = new \Upwork\API\Config($options);
+        $client = new \Upwork\API\Client($config);
+        return $client;
+    }
+
+    public function getUpworkClient($overrideOptions = [])
     {
 
         $settings = Setting::whereIn('name',[
@@ -96,8 +382,7 @@ class UpWorkService extends BaseService {
         $options = [
             'clientId'          => config('upwork.client_id'),
             'clientSecret'      => config('upwork.client_secret'),
-            // 'grantType'         => 'code', // used in Client Credentials Grant
-            // 'redirectUri'       => config('upwork.redirect_uri').'/upwork/code',
+            'redirectUri'       => config('upwork.redirect_uri').'/upwork/code',
         ];
         if($settings->has('access_token'))
         {

@@ -63,6 +63,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
 Route::get('/upwork/auth',[UpWorkController::class,'init']);
 Route::get('/upwork/code',[UpWorkController::class,'code']);
 Route::get('/upwork/jobs',[UpWorkController::class,'jobs']);
+Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
 
 Route::fallback(function(){
     abort(404);

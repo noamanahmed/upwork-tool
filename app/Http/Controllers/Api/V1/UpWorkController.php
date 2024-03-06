@@ -26,4 +26,9 @@ class UpWorkController extends BaseController
     {
         return $this->upworkService->jobs();
     }
+
+    public function job($jobId, Request $request)
+    {
+        return $this->upworkService->job($jobId);
+    }
 }

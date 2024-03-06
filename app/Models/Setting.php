@@ -23,4 +23,5 @@ class Setting extends BaseModel
         $setting->save();
         return $setting;
     }
+
 }

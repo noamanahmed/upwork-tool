@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\UserSetting;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_settings', function (Blueprint $table) {
+        Schema::create('job_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->string('timezone')->default(UserSetting::TIMEZONE);
-            $table->string('language')->default(UserSetting::LANGUAGE);
             $table->datetimes();
-            $table->index('user_id');
         });
     }
 
@@ -27,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('user_settings');
+        Schema::dropIfExists('job_details');
     }
 };
