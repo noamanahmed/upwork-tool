@@ -93,6 +93,7 @@ class UpWorkService extends BaseService {
                         id
                         fileName
                         fileSize
+
                       }
                       classification {
                         category {
@@ -352,6 +353,207 @@ class UpWorkService extends BaseService {
         foreach($jobs as $job)
         {
             $ids[] = (array) $job->node;
+        }
+        return $this->successfullApiResponse($ids);
+    }
+
+    public function categories()
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query ontologyCategories {
+            ontologyCategories {
+              id
+              preferredLabel
+              altLabel
+              slug
+              ontologyId
+              subcategories{
+                id
+                  preferredLabel
+                  altLabel
+              }
+
+            }
+
+        }
+        QUERY;
+        // $params['variables'] = [
+        //     "searchType" => "JOBS_FEED",
+        //     "marketPlaceJobFilter" => [
+        //       "searchExpression_eq" => "laravel",
+        //       "pagination_eq" => [
+        //         "after" => "0",
+        //         "first" => 10
+        //       ]
+        //     ]
+        // ];
+        $response = $graphql->execute($params);
+        // dd($response);
+        $data = $response->data;
+        $ids = [];
+        foreach($data as $category)
+        {
+            $ids[] = (array) $category;
+        }
+        return $this->successfullApiResponse($ids);
+    }
+    public function skills()
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query ontologySkills(
+            \$limit: Int!,
+            \$offset: Int
+          ) {
+              ontologySkills(
+              limit: \$limit,
+              offset: \$offset
+            ){
+              id
+              prettyName
+              preferredLabel
+              presentationMode
+              altLabel
+              ontologyId
+            }
+          }
+        QUERY;
+        $params['variables'] = [
+            "limit" => 100,
+            "offset" => 100,
+        ];
+        $response = $graphql->execute($params);
+        // dd($response);
+        $data = $response->data;
+        $ids = [];
+        foreach($data as $category)
+        {
+            $ids[] = (array) $category;
+        }
+        return $this->successfullApiResponse($ids);
+    }
+    public function timezones()
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query timeZones {
+            timeZones {
+              timeZoneName
+              timeZoneDescription
+            }
+        }
+        QUERY;
+        $params['variables'] = [
+            "limit" => 100,
+            "offset" => 100,
+        ];
+        $response = $graphql->execute($params);
+        // dd($response);
+        $data = $response->data;
+        $ids = [];
+        foreach($data as $category)
+        {
+            $ids[] = (array) $category;
+        }
+        return $this->successfullApiResponse($ids);
+    }
+
+    public function languages()
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query languages {
+            languages {
+              iso639Code
+              active
+              englishName
+            }
+        }
+        QUERY;
+        $params['variables'] = [
+            "limit" => 100,
+            "offset" => 100,
+        ];
+        $response = $graphql->execute($params);
+        // dd($response);
+        $data = $response->data;
+        $ids = [];
+        foreach($data as $category)
+        {
+            $ids[] = (array) $category;
+        }
+        return $this->successfullApiResponse($ids);
+    }
+
+    public function countries()
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query countries {
+            countries {
+              id
+              name
+              twoLetterAbbreviation
+              threeLetterAbbreviation
+              region
+              phoneCode
+              relatedRegion {
+                id
+                name
+              }
+              relatedSubRegion {
+                id
+                name
+              }
+              active
+              registrationAllowed
+            }
+          }
+        QUERY;
+        $params['variables'] = [
+            "limit" => 100,
+            "offset" => 100,
+        ];
+        $response = $graphql->execute($params);
+        // dd($response);
+        $data = $response->data;
+        $ids = [];
+        foreach($data as $category)
+        {
+            $ids[] = (array) $category;
+        }
+        return $this->successfullApiResponse($ids);
+    }
+    public function regions()
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query languages {
+            languages {
+              iso639Code
+              active
+              englishName
+            }
+        }
+        QUERY;
+        $params['variables'] = [
+            "limit" => 100,
+            "offset" => 100,
+        ];
+        $response = $graphql->execute($params);
+        // dd($response);
+        $data = $response->data;
+        $ids = [];
+        foreach($data as $category)
+        {
+            $ids[] = (array) $category;
         }
         return $this->successfullApiResponse($ids);
     }

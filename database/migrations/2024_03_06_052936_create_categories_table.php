@@ -17,6 +17,10 @@ return new class extends Migration
             $table->mediumText('description');
             $table->datetimes();
         });
+        Schema::table('categories', function (Blueprint $table) {
+            $table->foreignId('parent_id')->constrained('categories')->onDelete('cascade');
+        });
+
     }
 
     /**

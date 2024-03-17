@@ -63,6 +63,12 @@ Route::middleware(['auth:sanctum'])->group(function() {
 Route::get('/upwork/auth',[UpWorkController::class,'init']);
 Route::get('/upwork/code',[UpWorkController::class,'code']);
 Route::get('/upwork/jobs',[UpWorkController::class,'jobs']);
+Route::get('/upwork/categories',[UpWorkController::class,'categories']);
+Route::get('/upwork/skills',[UpWorkController::class,'skills']);
+Route::get('/upwork/timezones',[UpWorkController::class,'timezones']);
+Route::get('/upwork/languages',[UpWorkController::class,'languages']);
+Route::get('/upwork/countries',[UpWorkController::class,'countries']);
+Route::get('/upwork/regions',[UpWorkController::class,'regions']);
 Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
 
 Route::fallback(function(){

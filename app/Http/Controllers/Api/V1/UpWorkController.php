@@ -31,4 +31,29 @@ class UpWorkController extends BaseController
     {
         return $this->upworkService->job($jobId);
     }
+    public function categories(Request $request)
+    {
+        return $this->upworkService->categories();
+    }
+
+    public function skills(Request $request)
+    {
+        return $this->upworkService->skills();
+    }
+    public function timezones(Request $request)
+    {
+        return $this->upworkService->timezones();
+    }
+    public function languages(Request $request)
+    {
+        return $this->upworkService->languages();
+    }
+    public function countries(Request $request)
+    {
+        return $this->upworkService->countries();
+    }
+    public function regions(Request $request)
+    {
+        return $this->upworkService->regions();
+    }
 }
