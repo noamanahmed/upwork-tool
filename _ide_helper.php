@@ -21215,6 +21215,7 @@ namespace  {
             class Validator extends \Illuminate\Support\Facades\Validator {}
             class View extends \Illuminate\Support\Facades\View {}
             class Vite extends \Illuminate\Support\Facades\Vite {}
+            class Horizon extends \Laravel\Horizon\Horizon {}
             class Octane extends \Laravel\Octane\Facades\Octane {}
             class Flare extends \Spatie\LaravelIgnition\Facades\Flare {}
     }
