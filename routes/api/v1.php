@@ -22,7 +22,12 @@ use App\Http\Controllers\Api\V1\TranslationController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\LanguageController;
 use App\Http\Controllers\Api\V1\UpWorkController;
+use App\Models\Job;
+use App\Models\JobSearch;
 use App\Models\Quotation;
+use App\Services\JobService;
+use App\Services\ThirdParty\SlackService;
+use App\Services\UpWorkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +75,27 @@ Route::get('/upwork/languages',[UpWorkController::class,'languages']);
 Route::get('/upwork/countries',[UpWorkController::class,'countries']);
 Route::get('/upwork/regions',[UpWorkController::class,'regions']);
 Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
+
+
+Route::get('/upwork/debug/slack',function(){
+    $job= Job::findOrfail(136);
+    app(SlackService::class)->sendNotification($job->slack_notification_message);
+});
+Route::get('/upwork/debug/{id}',function($id){
+    $jobSearch = JobSearch::findOrfail($id);
+    $options =  $jobSearch->toArray();
+    $cacheKey = 'upwork_jobs_'.$id;
+    $jobs = Cache::get($cacheKey);
+    if(empty($jobs))
+    {
+        $jobs = app(UpWorkService::class)->jobs($options);
+        Cache::set($cacheKey,$jobs,3600);
+    }
+
+
+    app(JobService::class)->insertJobsFromApiResponse($jobs);
+});
+
 
 Route::fallback(function(){
     abort(404);

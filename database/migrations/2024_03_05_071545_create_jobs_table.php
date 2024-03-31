@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('upwork_id')->index()->unique();
-            $table->foreignId('client_id')->constrained('clients')->nullable()->onDelete('cascade');
+            // $table->foreignId('client_id')->constrained('clients')->nullable()->onDelete('cascade');
             $table->string('ciphertext')->nullable();
             $table->string('title');
             $table->mediumText('description');
+            $table->boolean('is_slack_webhook_sent')->default(0);
+            $table->json('json');
             $table->datetimes();
         });
     }

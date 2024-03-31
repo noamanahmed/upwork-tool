@@ -27,11 +27,11 @@ class UserSeeder extends Seeder
         $user->type = UserTypeEnum::ADMIN;
         $user->save();
         $user->assignRole('admin');
-        $userSettings = new UserSetting();
-        $userSettings->user_id = $user->id;
-        $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
-        $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
-        $userSettings->save();
+        // $userSettings = new UserSetting();
+        // $userSettings->user_id = $user->id;
+        // $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
+        // $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
+        // $userSettings->save();
 
         $user = new User();
         $user->first_name = 'Noaman';
@@ -43,11 +43,11 @@ class UserSeeder extends Seeder
         $user->type = UserTypeEnum::SUPER_ADMIN;
         $user->save();
         $user->assignRole('super_admin');
-        $userSettings = new UserSetting();
-        $userSettings->user_id = $user->id;
-        $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
-        $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
-        $userSettings->save();
+        // $userSettings = new UserSetting();
+        // $userSettings->user_id = $user->id;
+        // $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
+        // $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
+        // $userSettings->save();
 
         $user = new User();
         $user->first_name = 'Noaman';
@@ -59,11 +59,11 @@ class UserSeeder extends Seeder
         $user->save();
         $user->assignRole('read_only');
 
-        $userSettings = new UserSetting();
-        $userSettings->user_id = $user->id;
-        $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
-        $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
-        $userSettings->save();
+        // $userSettings = new UserSetting();
+        // $userSettings->user_id = $user->id;
+        // $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
+        // $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
+        // $userSettings->save();
 
         $user = new User();
         $user->first_name = 'Noaman';
@@ -75,11 +75,11 @@ class UserSeeder extends Seeder
         $user->type = UserTypeEnum::EMPLOYEE;
         $user->save();
         $user->assignRole('employee');
-        $userSettings = new UserSetting();
-        $userSettings->user_id = $user->id;
-        $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
-        $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
-        $userSettings->save();
+        // $userSettings = new UserSetting();
+        // $userSettings->user_id = $user->id;
+        // $userSettings->timezone = UserSetting::DEFAULT_TIMEZONE;
+        // $userSettings->language = UserSetting::DEFAULT_LANGUAGE;
+        // $userSettings->save();
 
     }
 }

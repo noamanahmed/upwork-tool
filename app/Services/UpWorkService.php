@@ -39,7 +39,7 @@ class UpWorkService extends BaseService {
 
     }
 
-    public function jobs()
+    public function jobs($options = [])
     {
         $client = $this->getUpworkClient();
         $graphql = new \Upwork\API\Routers\Graphql($client);
@@ -198,27 +198,35 @@ class UpWorkService extends BaseService {
               }
         }
         QUERY;
+        $query = 'laravel';
+
+        if(array_key_exists('q',$options))
+        {
+            $query = $options['q'];
+        }
+
         $params['variables'] = [
             "searchType" => "JOBS_FEED",
             "marketPlaceJobFilter" => [
-              "searchExpression_eq" => "laravel",
+              "searchExpression_eq" => $query,
               "pagination_eq" => [
                 "after" => "0",
                 "first" => 10
               ]
             ]
         ];
-        $response = $graphql->execute($params);
-        // dd($response);
-        $data = $response->data;
 
+        $response = $graphql->execute($params);
+
+        $data = $response->data;
         $jobs = $data->marketplaceJobPostings->edges;
-        $ids = [];
+        $data = [];
         foreach($jobs as $job)
         {
-            $ids[] = (array) $job->node;
+            $node = $this->convertObjectToArray($job);
+            $data[] = $node;
         }
-        return $this->successfullApiResponse($ids);
+        return $data;
     }
 
     public function job($upworkJobId)

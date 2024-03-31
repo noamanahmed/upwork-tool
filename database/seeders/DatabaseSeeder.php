@@ -17,9 +17,9 @@ class DatabaseSeeder extends Seeder
 
         // $this->call(LeadSeeder::class);
         // $this->call(QuotationSeeder::class);
-        $this->call(LanguageSeeder::class);
-        $this->call(TranslationSeeder::class);
-        $this->call(PermissionSeeder::class);
+        // $this->call(LanguageSeeder::class);
+        // $this->call(TranslationSeeder::class);
+        // $this->call(PermissionSeeder::class);
 
         $this->call(RoleSeeder::class);
         $this->call(RolePermissionSeeder::class);
@@ -36,5 +36,6 @@ class DatabaseSeeder extends Seeder
         // $this->call(CustomerSeeder::class);
         // $this->call(OrderSeeder::class);
         // $this->call(TaskSeeder::class);
+        $this->call(JobSearchSeeder::class);
     }
 }

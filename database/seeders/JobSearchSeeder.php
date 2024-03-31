@@ -12,6 +12,22 @@ class JobSearchSeeder extends Seeder
      */
     public function run(): void
     {
-        JobSearch::factory()->count(24)->create();
+        $jobSearch = new JobSearch();
+        $jobSearch->user_id = 1;
+        $jobSearch->name = 'laravel';
+        $jobSearch->q = 'laravel';
+        $jobSearch->save();
+
+        $jobSearch = new JobSearch();
+        $jobSearch->user_id = 1;
+        $jobSearch->name = 'wordpress';
+        $jobSearch->q = 'wordpress';
+        $jobSearch->save();
+
+        $jobSearch = new JobSearch();
+        $jobSearch->user_id = 1;
+        $jobSearch->name = 'devops';
+        $jobSearch->q = 'devops';
+        $jobSearch->save();
     }
 }

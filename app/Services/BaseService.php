@@ -106,4 +106,8 @@ class BaseService implements BaseServiceContract{
         return $this->apiResponse($data,403);
     }
 
+    public function convertObjectToArray($object)
+    {
+        return json_decode(json_encode($object),true);
+    }
 }
