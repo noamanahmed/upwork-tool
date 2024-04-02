@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Models\Setting;
 use Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Fluent;
 
@@ -616,6 +617,7 @@ class UpWorkService extends BaseService {
 
         $config = new \Upwork\API\Config($options);
         $client = new \Upwork\API\Client($config);
+
         if($this->isAccessTokenExpired($client))
         {
             $client = $this->renewAccessToken($client,$config);
@@ -625,10 +627,11 @@ class UpWorkService extends BaseService {
     }
     public function isAccessTokenExpired($client)
     {
-        return true;
+        return Carbon::now()->timestamp < $client->get('expiry') - 30;
     }
     public function renewAccessToken($client,$config)
     {
+        $this->log('info',"Renewing Access Token");
         $accessToken = $client->getServer()->getInstance()->getAccessToken('refresh_token',[
             'refresh_token' => $config->get('refreshToken')
         ]);
