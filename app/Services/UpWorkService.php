@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Models\Setting;
 use Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Fluent;
 
 class UpWorkService extends BaseService {
@@ -217,7 +218,13 @@ class UpWorkService extends BaseService {
         ];
 
         $response = $graphql->execute($params);
-
+        if(property_exists($response,'message'))
+        {
+            $this->log('warning',$response->message,[
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
         $data = $response->data;
         $jobs = $data->marketplaceJobPostings->edges;
         $data = [];
@@ -609,7 +616,37 @@ class UpWorkService extends BaseService {
 
         $config = new \Upwork\API\Config($options);
         $client = new \Upwork\API\Client($config);
+        if($this->isAccessTokenExpired($client))
+        {
+            $client = $this->renewAccessToken($client,$config);
+        }
+
         return $client;
+    }
+    public function isAccessTokenExpired($client)
+    {
+        return true;
+    }
+    public function renewAccessToken($client,$config)
+    {
+        $accessToken = $client->getServer()->getInstance()->getAccessToken('refresh_token',[
+            'refresh_token' => $config->get('refreshToken')
+        ]);
+
+        Setting::insertOrUpdate('access_token',$accessToken->getToken());
+        Setting::insertOrUpdate('refresh_token',$accessToken->getRefreshToken());
+        Setting::insertOrUpdate('expiry',$accessToken->getExpires());
+
+        $config->set('accessToken',$accessToken->getToken());
+        $config->set('refreshToken',$accessToken->getRefreshToken());
+        $config->set('expires',$accessToken->getExpires());
+
+        $client = new \Upwork\API\Client($config);
+        return $client;
+    }
+    public function log($type,$data,$contenxt = [])
+    {
+        Log::$type($data,$contenxt);
     }
 }
 
