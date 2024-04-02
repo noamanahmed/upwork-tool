@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('upwork:search')->everyTenSeconds();
         $schedule->command('upwork:send-slack-notifications')->everyFiveSeconds();
+        $schedule->command('telescope:prune --hours=96')->everyThreeHours();
     }
 
     /**
