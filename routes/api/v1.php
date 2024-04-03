@@ -79,7 +79,7 @@ Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlac
 
 
 Route::get('/upwork/debug/slack',function(){
-    $job= Job::findOrfail(136);
+    $job= Job::findOrfail(667);
     app(SlackService::class)->sendNotification($job->slack_notification_message);
 });
 Route::get('/upwork/debug/{id}',function($id){

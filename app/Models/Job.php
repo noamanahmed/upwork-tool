@@ -18,6 +18,11 @@ class Job extends BaseModel
         $clientId = $data['node.job.ownership.team.id'] ?? 'N/A';
         $clientName = $data['node.job.ownership.team.name'] ?? 'N/A';
         $clientType = $data['node.job.ownership.team.type'] ?? 'N/A';
+        $clientBudget = $data['node.amount.rawValue'] ?? 'N/A';
+        $clientBudgetCurrency = $data['node.amount.currency'] ?? 'N/A';
+        $clientWeeklyBudget = $data['node.weeklyBudget.rawValue'] ?? 'N/A';
+        $clientWeeklyBudgetCurrency = $data['node.weeklyBudget.currency'] ?? 'N/A';
+        $projectTotalApplicants = $data['node.totalApplicants'] ?? 'N/A';
         $averageRateBid = $data['node.job.activityStat.applicationsBidStats.avgRateBid.rawValue'] ?? 'N/A';
         $averageRateCurrency = $data['node.job.activityStat.applicationsBidStats.avgRateBid.currency'] ?? 'N/A';
         $maximumRateBid = $data['node.job.activityStat.applicationsBidStats.maxRateBid.rawValue'] ?? 'N/A';
@@ -38,11 +43,17 @@ class Job extends BaseModel
         $text .= "\n\n";
         $text .= ' *Job Description* '.$job->description;
         $text .= "\n\n";
-        $text .= '*Job Link*  :' .'https://www.upwork.com/jobs/'.$job->ciphertext;
-        $text .= "\n\n";
         $text .= '*Client Id* : '.$clientId;
         $text .= "\n\n";
         $text .= '*Client Name* : '.$clientName;
+        $text .= "\n\n";
+        $text .= '*Client Budget* : '.$clientBudget;
+        $text .= "\n\n";
+        $text .= '*Client BudgetCurrency* : '.$clientBudgetCurrency;
+        $text .= "\n\n";
+        $text .= '*Client WeeklyBudget* : '.$clientWeeklyBudget;
+        $text .= "\n\n";
+        $text .= '*Client WeeklyBudgetCurrency* : '.$clientWeeklyBudgetCurrency;
         $text .= "\n\n";
         $text .= '*Client Type* : '.$clientType;
         $text .= "\n\n";
@@ -58,6 +69,8 @@ class Job extends BaseModel
         $text .= "\n\n";
         $text .= '*Minimum Rate Currency* : '.$minimumRateCurrency;
         $text .= "\n\n";
+        $text .= '*Project TotalApplicants* : '.$projectTotalApplicants;
+        $text .= "\n\n";
         $text .= '*Client Total Hires* : '.$clientTotalHires;
         $text .= "\n\n";
         $text .= '*Client Total Spend* : '.$clientTotalSpend;
@@ -70,6 +83,9 @@ class Job extends BaseModel
         $text .= "\n\n";
         $text .= '*Client Total Posted Jobs* : '.$clientTotalPostedJobs;
         $text .= "\n\n";
+        $text .= '*Job Link*  :' .'https://www.upwork.com/jobs/'.$job->ciphertext;
+        $text .= "\n\n";
+        $text .= '*Job Link(Opens in App)*  :' .'upwork://www.upwork.com/jobs/'.$job->ciphertext;
 
         return $text;
     }

@@ -88,7 +88,10 @@ class UpWorkService extends BaseService {
                         label
                         weeks
                     }
-
+                    preferredFreelancerLocation
+                    preferredFreelancerLocationMandatory
+                    premium
+                    applied
                     job {
                       id
                       workFlowState {
@@ -246,7 +249,7 @@ class UpWorkService extends BaseService {
         ];
 
         $response = $graphql->execute($params);
-        dd($response);
+
         if(property_exists($response,'message'))
         {
             $this->log('warning',$response->message,[
