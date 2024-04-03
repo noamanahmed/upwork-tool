@@ -75,6 +75,7 @@ Route::get('/upwork/languages',[UpWorkController::class,'languages']);
 Route::get('/upwork/countries',[UpWorkController::class,'countries']);
 Route::get('/upwork/regions',[UpWorkController::class,'regions']);
 Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
+Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlackMessage']);
 
 
 Route::get('/upwork/debug/slack',function(){

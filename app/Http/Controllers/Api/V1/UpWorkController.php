@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1 ;
 
 use App\Http\Requests\StoreUpWorkRequest;
 use App\Http\Requests\UpdateUpWorkRequest;
+use App\Models\Job;
 use App\Models\UpWork;
 use App\Services\UpWorkService;
 use Request;
@@ -31,6 +32,13 @@ class UpWorkController extends BaseController
     {
         return $this->upworkService->job($jobId);
     }
+    public function jobSlackMessage($jobId, Request $request)
+    {
+        $job = Job::findOrfail($jobId);
+        dd($job->slack_notification_message);
+        return $job->slack_notification_message;
+    }
+
     public function categories(Request $request)
     {
         return $this->upworkService->categories();

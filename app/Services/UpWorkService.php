@@ -62,6 +62,33 @@ class UpWorkService extends BaseService {
                     id
                     title
                     ciphertext
+
+                    engagement
+                    amount {
+                        rawValue
+                        currency
+                        displayValue
+                    }
+                    recordNumber
+                    experienceLevel
+                    category
+                    subcategory
+                    freelancersToHire
+                    totalApplicants
+                    createdDateTime
+                    publishedDateTime
+                    renewedDateTime
+                    weeklyBudget {
+                        rawValue
+                        currency
+                        displayValue
+                    }
+                    engagementDuration {
+                        id
+                        label
+                        weeks
+                    }
+
                     job {
                       id
                       workFlowState {
@@ -219,6 +246,7 @@ class UpWorkService extends BaseService {
         ];
 
         $response = $graphql->execute($params);
+        dd($response);
         if(property_exists($response,'message'))
         {
             $this->log('warning',$response->message,[
@@ -226,6 +254,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
+
         $data = $response->data;
         $jobs = $data->marketplaceJobPostings->edges;
         $data = [];
@@ -362,7 +391,6 @@ class UpWorkService extends BaseService {
         $response = $graphql->execute($params);
         $response = json_decode(json_encode($response->data), true);
         $response = Arr::dot($response);
-        dd($response);
         $data = $response->data;
         $jobs = $data->marketplaceJobPostings->edges;
         $ids = [];
