@@ -26,7 +26,7 @@ class JobService extends BaseService{
     {
         foreach($data as $jobData)
         {
-
+            if(empty($jobData)) continue;
             $node = $jobData['node'];
             $node = Arr::dot($node);
             $lock = Cache::lock('job_servic_insert_job_'.$node['id'],10);
