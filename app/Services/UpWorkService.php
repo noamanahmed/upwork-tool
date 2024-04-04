@@ -649,16 +649,16 @@ class UpWorkService extends BaseService {
         $config = new \Upwork\API\Config($options);
         $client = new \Upwork\API\Client($config);
 
-        if($this->isAccessTokenExpired($client))
+        if($this->isAccessTokenExpired($config))
         {
             $client = $this->renewAccessToken($client,$config);
         }
 
         return $client;
     }
-    public function isAccessTokenExpired($client)
+    public function isAccessTokenExpired($config)
     {
-        return Carbon::now()->timestamp < $client->get('expiry') - 30;
+        return Carbon::now()->timestamp > ( $config->get('expiresIn') - 30) ;
     }
     public function renewAccessToken($client,$config)
     {
