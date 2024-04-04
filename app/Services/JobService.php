@@ -29,7 +29,7 @@ class JobService extends BaseService{
             if(empty($jobData)) continue;
             $node = $jobData['node'];
             $node = Arr::dot($node);
-            $lock = Cache::lock('job_servic_insert_job_'.$node['id'],10);
+            $lock = Cache::lock('job_service_insert_job_'.$node['id'],10);
             if ($lock->get()) {
                 DB::beginTransaction();
                 $job = Job::where('upwork_id',$node['id'])->first();

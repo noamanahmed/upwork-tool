@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\JobSearch as JobsJobSearch;
 use App\Models\JobSearch as ModelsJobSearch;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class JobSearch extends Command
 {
@@ -31,7 +32,10 @@ class JobSearch extends Command
 
         foreach($JobSearches as $search)
         {
-            JobsJobSearch::dispatch($search);
+            $lock = Cache::lock('job_service_dispatch_job_'.$search->id,30);
+            if ($lock->get()) {
+                JobsJobSearch::dispatch($search);
+            }
         }
     }
 }

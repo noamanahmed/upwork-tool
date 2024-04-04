@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 
 class JobSearch implements ShouldQueue
 {
@@ -34,5 +35,13 @@ class JobSearch implements ShouldQueue
         $options =  $this->jobSearch->toArray();
         $jobs = app(UpWorkService::class)->jobs($options);
         app(JobService::class)->insertJobsFromApiResponse($jobs);
+
+        // Check if the lock exists
+        if (Cache::has('job_service_dispatch_job_'.$this->jobSearch->id)) {
+            // Obtain the lock instance
+            $lock = Cache::lock('job_service_dispatch_job_'.$this->jobSearch->id);
+            // Release the lock
+            $lock->release();
+        }
     }
 }
