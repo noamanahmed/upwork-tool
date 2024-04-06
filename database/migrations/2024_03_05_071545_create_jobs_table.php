@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('ciphertext')->nullable();
             $table->string('title');
             $table->mediumText('description');
-            $table->boolean('is_slack_webhook_sent')->default(0);
+            $table->boolean('is_slack_webhook_sent')->default(0)->index();
             $table->json('json');
             $table->datetimes();
         });
