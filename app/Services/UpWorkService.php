@@ -83,6 +83,17 @@ class UpWorkService extends BaseService {
                         currency
                         displayValue
                     }
+                    hourlyBudgetType
+                    hourlyBudgetMin {
+                        rawValue
+                        currency
+                        displayValue
+                    }
+                    hourlyBudgetMax {
+                        rawValue
+                        currency
+                        displayValue
+                    }
                     engagementDuration {
                         id
                         label
@@ -610,7 +621,7 @@ class UpWorkService extends BaseService {
         $options = [
             'clientId'          => config('upwork.client_id'),
             'clientSecret'      => config('upwork.client_secret'),
-            'redirectUri'       => config('upwork.redirect_uri').'/upwork/code',
+            'redirectUri'       => config('upwork.redirect_uri').'/api/v1/upwork/code',
         ];
 
         $config = new \Upwork\API\Config($options);
