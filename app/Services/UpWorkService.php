@@ -114,12 +114,54 @@ class UpWorkService extends BaseService {
                           id
                           name
                           type
+                          creationDate
+                          active
+                          legacyType
 
                         }
+                        company {
+                            id
+                            name
+                            type
+                            creationDate
+                            active
+                            legacyType
+                          }
                       }
                       content {
                         title
                         description
+                      }
+                      contractTerms{
+                        contractType
+                        onSiteType
+                        personsToHire
+                        experienceLevel
+                        fixedPriceContractTerms {
+                            amount {
+                                rawValue
+                                currency
+                                displayValue
+                            }
+                            maxAmount {
+                                rawValue
+                                currency
+                                displayValue
+                            }
+                            engagementDuration {
+                                label
+                                weeks
+                            }
+                        }
+                        hourlyContractTerms {
+                            engagementDuration {
+                                label
+                                weeks
+                            }
+                            engagementType
+                            hourlyBudgetMin
+                            hourlyBudgetMax
+                        }
                       }
                       contractorSelection {
                         proposalRequirement {
@@ -294,8 +336,7 @@ class UpWorkService extends BaseService {
               }
               ownership {
                 team {
-                  id
-                  nam1e
+                  name
                   type
                   photoUrl
                 }
