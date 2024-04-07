@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('job_searches_jobs_pivot', function (Blueprint $table) {
+        Schema::create('job_skills', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('job_search_id')->constrained('job_searches')->onDelete('cascade');
             $table->foreignId('job_id')->constrained('jobs')->onDelete('cascade');
-            $table->boolean('is_slack_webhook_sent')->default(0)->index();
+            $table->foreignId('skill_id')->constrained('skills')->onDelete('cascade');
             $table->datetimes();
         });
     }
@@ -25,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('job_searches_jobs_pivot');
+        Schema::dropIfExists('job_skills');
     }
 };

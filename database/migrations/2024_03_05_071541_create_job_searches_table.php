@@ -39,6 +39,7 @@ return new class extends Migration
             $table->string('connect_required_minimum')->nullable();
             $table->string('connect_required_maximum')->nullable();
             $table->boolean('is_contract_to_hire')->nullable();
+            $table->string('slack_webhook_url')->nullable();
             $table->integer('status')->default(JobSearchStatusEnum::ACTIVE);
             $table->datetimes();
         });

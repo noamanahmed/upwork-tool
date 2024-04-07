@@ -79,10 +79,10 @@ Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
 Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlackMessage']);
 
 
-Route::get('/upwork/debug/slack',function(){
-    $job= Job::latest()->first();
-    app(SlackService::class)->sendNotification($job->slack_notification_message);
-});
+// Route::get('/upwork/debug/slack',function(){
+//     $job= Job::latest()->first();
+//     app(SlackService::class)->sendNotification($job->slack_notification_message);
+// });
 Route::get('/upwork/debug/categories',function(){
     $categories= app(UpWorkService::class)->categories();
     app(CategoryService::class)->insertCategoriesFromApiResponse($categories);
@@ -108,6 +108,7 @@ Route::get('/upwork/debug/{id}',function($id){
     $options =  $jobSearch->toArray();
     $cacheKey = 'upwork_jobs_'.$id;
     $jobs = Cache::get($cacheKey);
+
     if(empty($jobs))
     {
         $jobs = app(UpWorkService::class)->jobs($options);
@@ -116,6 +117,8 @@ Route::get('/upwork/debug/{id}',function($id){
 
 
     app(JobService::class)->insertJobsFromApiResponse($jobs);
+    app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$jobSearch);
+    app(CategoryService::class)->attachCategoriesToJobsFromApiResponse($jobs);
 });
 
 

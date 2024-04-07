@@ -46,45 +46,45 @@ class Job extends BaseModel
         $text .= ' *Job Description* '.$job->description;
         $text .= "\n\n";
         $text .= '*Client Id* : '.$clientId;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client Name* : '.$clientName;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client Budget* : '.$clientBudget;
         $text .= "\n\n";
         $text .= '*Client BudgetCurrency* : '.$clientBudgetCurrency;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client WeeklyBudget* : '.$clientWeeklyBudget;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client WeeklyBudgetCurrency* : '.$clientWeeklyBudgetCurrency;
         $text .= "\n\n";
         $text .= '*Client Type* : '.$clientType;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Average Rate Bid* : '.$averageRateBid;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Average Rate Currency* : '.$averageRateCurrency;
         $text .= "\n\n";
         $text .= '*Maximum Rate Bid* : '.$maximumRateBid;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Maximum Rate Currency* : '.$maximumRateCurrency;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Minimum Rate Bid* : '.$minimumRateBid;
         $text .= "\n\n";
         $text .= '*Minimum Rate Currency* : '.$minimumRateCurrency;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Engagement* : '.$engagement;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Project TotalApplicants* : '.$projectTotalApplicants;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client Total Hires* : '.$clientTotalHires;
         $text .= "\n\n";
         $text .= '*Client Total Spend* : '.$clientTotalSpend;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client Total Spend Currency* : '.$clientTotalSpendCurrency;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client Total Reviews* : '.$clientTotalReviews;
         $text .= "\n\n";
         $text .= '*Client Total Feedback* : '.$clientTotalFeedback;
-        $text .= "\t\t";
+        $text .= "\n";
         $text .= '*Client Total Posted Jobs* : '.$clientTotalPostedJobs;
         $text .= "\n\n";
         $text .= '*Job Link*  :' .'https://www.upwork.com/jobs/'.$job->ciphertext;
@@ -98,5 +98,17 @@ class Job extends BaseModel
     {
         if(empty($this->json)) return;
         return Arr::dot(json_decode($this->json,true));
+    }
+    public function searches()
+    {
+        return $this->belongsToMany(JobSearch::class,'job_searches_jobs_pivot')->withPivot(['is_slack_webhook_sent']);
+    }
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class,'job_categories');
+    }
+    public function skills()
+    {
+        return $this->belongsToMany(Skill::class,'job_skills');
     }
 }

@@ -5,10 +5,14 @@ namespace App\Services;
 
 use App\Enums\CategoryStatusEnum;
 use App\Models\Category;
+use App\Models\Job;
 use App\Models\Skill;
 use App\Repositories\CategoryRepository;
 use App\Transformers\CategoryCollectionTransformer;
 use App\Transformers\CategoryTransformer;
+use Cache;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class CategoryService extends BaseService{
 
@@ -72,6 +76,48 @@ class CategoryService extends BaseService{
         {
             Skill::insert($skills);
             $skills = [];
+        }
+    }
+    public function attachCategoriesToJobsFromApiResponse($data)
+    {
+        foreach ($data as $jobData) {
+
+            $node = $jobData['node'];
+            $job = Job::where('upwork_id', $node['id'])->first();
+            if (empty($job)) continue;
+            $categoriesIds = [];
+            $lock = Cache::lock('job_service_attach_categories_and_skills_for_job_' . $node['id'], 30);
+            if (!$lock->get()) {
+                continue;
+            }
+            if(!empty($node['job']['classification']['category']['id'] ?? false))
+            {
+                $categoriesIds[] = $node['job']['classification']['category']['id'];
+            }
+            if(!empty($node['job']['classification']['subCategory']['id'] ?? false))
+            {
+                $categoriesIds[] = $node['job']['classification']['subCategory']['id'];
+            }
+            $skillsIds = [];
+            foreach($node['job']['classification']['additionalSkills'] ?? [] as $skill)
+            {
+                $skillsIds[] = $skill['id'];
+            }
+            foreach($node['job']['classification']['skills'] ?? [] as $skill)
+            {
+                $skillsIds[] = $skill['id'];
+            }
+            if(!empty($skillsIds))
+            {
+                $skills = Skill::whereIn('id',$skillsIds)->get();
+                $job->skills()->sync($skills);
+            }
+            if(!empty($categoriesIds))
+            {
+                $categories = Skill::whereIn('id',$categoriesIds)->get();
+                $job->categories()->sync($categories);
+            }
+            $lock->release();
         }
     }
 }
