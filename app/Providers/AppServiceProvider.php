@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Database\ConnectionPooler;
 use App\Models\Language;
 use App\Router\ResourceRegistrar;
 use App\Router\Router as MyRouter;
@@ -70,5 +71,11 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Database\Eloquent\Builder::macro('toRawSql', function(){
             return ($this->getQuery()->toRawSql());
         });
+
+        // $this->app->singleton('db', function ($app) {
+        //     $factory = $app->make('db.factory');
+
+        //     return new ConnectionPooler($factory);
+        // });
     }
 }
