@@ -114,7 +114,7 @@ class CategoryService extends BaseService{
             }
             if(!empty($categoriesIds))
             {
-                $categories = Skill::whereIn('id',$categoriesIds)->get();
+                $categories = Category::whereIn('id',$categoriesIds)->get();
                 $job->categories()->sync($categories);
             }
             $lock->release();
