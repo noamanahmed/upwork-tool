@@ -34,7 +34,10 @@ class JobSearch extends Command
         {
             $lock = Cache::lock('job_service_dispatch_job_'.$search->id,30);
             if ($lock->get()) {
-                JobsJobSearch::dispatch($search);
+                $this->line('Acquired JOB Lock for Search ID:'.$search->id);
+                JobsJobSearch::dispatch($search,$lock);
+            }else{
+                $this->line('Cannot Acquire JOB Lock for Search ID:'.$search->id);
             }
         }
     }

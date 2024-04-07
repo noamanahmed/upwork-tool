@@ -27,6 +27,7 @@ class JobService extends BaseService
 
     public function insertJobsFromApiResponse($data)
     {
+
         foreach ($data as $jobData) {
             if (empty($jobData)) continue;
             $node = $jobData['node'];
@@ -36,6 +37,7 @@ class JobService extends BaseService
                 DB::beginTransaction();
                 $job = Job::where('upwork_id', $node['id'])->first();
                 if (!is_null($job)) {
+                    DB::rollBack();
                     continue;
                 }
                 $job = new Job();
@@ -59,7 +61,7 @@ class JobService extends BaseService
             $node = $jobData['node'];
             $job = Job::where('upwork_id', $node['id'])->first();
             if (empty($job)) continue;
-            $lock = Cache::lock('job_service_insert_job_' . $job->id . '_job_searches_'.$jobSearch->id, 1);
+            $lock = Cache::lock('job_service_insert_job_' . $job->id . '_job_searches_'.$jobSearch->id, 30);
             if ($lock->get()) {
                 $jobSearchPivot = JobSearchPivot::where('job_id', $job->id)->where('job_search_id', $jobSearch->id)->first();
                 if(!is_null($jobSearchPivot)) continue;

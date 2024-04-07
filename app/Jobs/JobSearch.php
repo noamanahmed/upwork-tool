@@ -20,12 +20,14 @@ class JobSearch implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $lock;
+
     /**
      * Create a new job instance.
      */
-    public function __construct(public ModelsJobSearch $jobSearch)
+    public function __construct(public ModelsJobSearch $jobSearch,$lock)
     {
-        //
+        $this->lock = $lock;
     }
 
     /**
@@ -38,12 +40,8 @@ class JobSearch implements ShouldQueue
         app(JobService::class)->insertJobsFromApiResponse($jobs);
         app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$this->jobSearch);
         app(CategoryService::class)->attachCategoriesToJobsFromApiResponse($jobs);
-        // Check if the lock exists
-        if (Cache::has('job_service_dispatch_job_'.$this->jobSearch->id)) {
-            // Obtain the lock instance
-            $lock = Cache::lock('job_service_dispatch_job_'.$this->jobSearch->id);
-            // Release the lock
-            $lock->release();
-        }
+
+        $this->lock->release();
+
     }
 }
