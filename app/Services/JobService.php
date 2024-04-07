@@ -58,7 +58,7 @@ class JobService extends BaseService
             $node = $jobData['node'];
             $job = Job::where('upwork_id', $node['id'])->first();
             if (empty($job)) continue;
-            $jobSearchPivot = JobSearchPivot::where('job_id', $node['id'])->where('job_search_id', $node['id'])->first();
+            $jobSearchPivot = JobSearchPivot::where('job_id', $job->id)->where('job_search_id', $jobSearch->id)->first();
             if(!is_null($jobSearchPivot)) continue;
             $lock = Cache::lock('job_service_insert_job_' . $node['id'].'_job_searches_'.$jobSearch->id, 30);
             if ($lock->get()) {
