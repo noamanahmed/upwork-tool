@@ -6,13 +6,15 @@ use App\Http\Requests\StoreUpWorkRequest;
 use App\Http\Requests\UpdateUpWorkRequest;
 use App\Models\Job;
 use App\Models\UpWork;
+use App\Services\JobService;
 use App\Services\UpWorkService;
 use Request;
 
 class UpWorkController extends BaseController
 {
     public function __construct(
-        private UpWorkService $upworkService
+        private UpWorkService $upworkService,
+        private JobService $jobService
     ){}
 
     public function init(Request $request)
@@ -30,7 +32,7 @@ class UpWorkController extends BaseController
 
     public function job($jobId, Request $request)
     {
-        return $this->upworkService->job($jobId);
+        return $this->jobService->get($jobId);
     }
     public function jobSlackMessage($jobId, Request $request)
     {

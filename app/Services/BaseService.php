@@ -67,6 +67,7 @@ class BaseService implements BaseServiceContract{
     }
     public function get($modelId){
         $model = $this->repository->find($modelId);
+        if(is_null($model)) return $this->apiResponse(['message' => 'The entity was not found'],404);
         $transformer = new $this->transformer();
         $transformer = $transformer->setResource($model);
         return $this->successfullApiResponse($transformer->toArray(),201);

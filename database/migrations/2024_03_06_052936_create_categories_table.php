@@ -18,7 +18,7 @@ return new class extends Migration
             $table->datetimes();
         });
         Schema::table('categories', function (Blueprint $table) {
-            $table->foreignId('parent_id')->constrained('categories')->onDelete('cascade');
+            $table->foreignId('parent_id')->nullable()->constrained('categories')->onDelete('cascade');
         });
 
     }

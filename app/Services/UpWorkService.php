@@ -322,142 +322,11 @@ class UpWorkService extends BaseService {
         return $data;
     }
 
-    public function job($upworkJobId)
-    {
-        $client = $this->getUpworkClient();
-        $graphql = new \Upwork\API\Routers\Graphql($client);
-        $params['query'] = <<<QUERY
-        query marketplaceJobPosting(\$id: ID!) {
-            marketplaceJobPosting(id: \$id) {
-              id
-              workFlowState {
-                status
-                closeResult
-              }
-              ownership {
-                team {
-                  name
-                  type
-                  photoUrl
-                }
-              }
-              content {
-                title
-                description
-              }
-              contractorSelection {
-                proposalRequirement {
-                  coverLetterRequired
-                  freelancerMilestonesAllowed
-                  screeningQuestions {
-                    sequenceNumber
-                    question
-                  }
-                }
-              }
-              attachments {
-                sequenceNumber
-                id
-                fileName
-                fileSize
-              }
-              classification {
-                category {
-                  id
-                  ontologyId
-                  definition
-                  preferredLabel
-                  type
-                }
-                subCategory {
-                  id
-                  ontologyId
-                  definition
-                  preferredLabel
-                  type
-                }
-                skills {
-                  id
-                  ontologyId
-                  definition
-                  preferredLabel
-                  type
-                }
-                additionalSkills {
-                  id
-                  ontologyId
-                  definition
-                  preferredLabel
-                  type
-                }
-              }
-              segmentationData {
-                segmentationValues {
-                  segmentationInfo {
-                    sortOrder
-                    id
-                    label
-                    referenceName
-                    skill {
-                      id
-                      ontologyId
-                      definition
-                      preferredLabel
-                      type
-                    }
-                    segmentationType {
-                      id
-                      name
-                      referenceName
-                    }
-                  }
-                }
-              }
-              activityStat {
-                applicationsBidStats {
-                  avgRateBid {
-                    rawValue
-                    currency
-                    displayValue
-                  }
-                  minRateBid {
-                    rawValue
-                    currency
-                    displayValue
-                  }
-                  maxRateBid {
-                    rawValue
-                    currency
-                    displayValue
-                  }
-                  avgInterviewedRateBid {
-                    rawValue
-                    currency
-                    displayValue
-                  }
-                }
-              }
-            }
-          }
-        QUERY;
-        $params['variables'] = [
-            "id" => $upworkJobId,
-        ];
-        $response = $graphql->execute($params);
-        $response = json_decode(json_encode($response->data), true);
-        $response = Arr::dot($response);
-        $data = $response->data;
-        $jobs = $data->marketplaceJobPostings->edges;
-        $ids = [];
-        foreach($jobs as $job)
-        {
-            $ids[] = (array) $job->node;
-        }
-        return $this->successfullApiResponse($ids);
-    }
 
     public function categories()
     {
+        $data = '[[{"id":"531770282584862721","preferredLabel":"Accounting & Consulting","altLabel":null,"slug":"accounting-consulting","ontologyId":"upworkOccupation:accountingandconsulting","subcategories":[{"id":"1534904461833879552","preferredLabel":"Personal & Professional Coaching","altLabel":null},{"id":"531770282601639943","preferredLabel":"Accounting & Bookkeeping","altLabel":null},{"id":"531770282601639945","preferredLabel":"Financial Planning","altLabel":null},{"id":"531770282601639946","preferredLabel":"Recruiting & Human Resources","altLabel":null},{"id":"531770282601639944","preferredLabel":"Management Consulting & Analysis","altLabel":null},{"id":"531770282601639947","preferredLabel":"Other - Accounting & Consulting","altLabel":null}]},{"id":"531770282580668416","preferredLabel":"Admin Support","altLabel":null,"slug":"admin-support","ontologyId":"upworkOccupation:adminsupport","subcategories":[{"id":"531770282584862724","preferredLabel":"Data Entry & Transcription Services","altLabel":null},{"id":"531770282584862725","preferredLabel":"Virtual Assistance","altLabel":null},{"id":"531770282584862728","preferredLabel":"Project Management","altLabel":null},{"id":"531770282584862726","preferredLabel":"Market Research & Product Reviews","altLabel":["Web Research"]}]},{"id":"531770282580668417","preferredLabel":"Customer Service","altLabel":null,"slug":"customer-service","ontologyId":"upworkOccupation:customerservicecategory","subcategories":[{"id":"1484275072572772352","preferredLabel":"Community Management & Tagging","altLabel":null},{"id":"531770282584862730","preferredLabel":"Customer Service & Tech Support","altLabel":null}]},{"id":"531770282580668420","preferredLabel":"Data Science & Analytics","altLabel":null,"slug":"data-science-analytics","ontologyId":"upworkOccupation:datascienceandanalytics","subcategories":[{"id":"531770282593251330","preferredLabel":"Data Analysis & Testing","altLabel":["A\/B Testing"]},{"id":"531770282593251331","preferredLabel":"Data Extraction\/ETL","altLabel":null},{"id":"531770282589057038","preferredLabel":"Data Mining & Management","altLabel":null},{"id":"531770282593251329","preferredLabel":"AI & Machine Learning","altLabel":null}]},{"id":"531770282580668421","preferredLabel":"Design & Creative","altLabel":null,"slug":"design-creative","ontologyId":"upworkOccupation:designandcreative","subcategories":[{"id":"531770282593251335","preferredLabel":"Art & Illustration","altLabel":null},{"id":"531770282593251341","preferredLabel":"Audio & Music Production","altLabel":null},{"id":"1044578476142100480","preferredLabel":"Branding & Logo Design","altLabel":["Brand Identity & Strategy"]},{"id":"1356688560628174848","preferredLabel":"NFT, AR\/VR & Game Art","altLabel":null},{"id":"531770282593251334","preferredLabel":"Graphic, Editorial & Presentation Design","altLabel":["Graphics & Design"]},{"id":"1356688565288046592","preferredLabel":"Performing Arts","altLabel":null},{"id":"531770282593251340","preferredLabel":"Photography","altLabel":null},{"id":"531770282601639953","preferredLabel":"Product Design","altLabel":null},{"id":"1356688570056970240","preferredLabel":"Video & Animation","altLabel":null}]},{"id":"531770282584862722","preferredLabel":"Engineering & Architecture","altLabel":null,"slug":"engineering-architecture","ontologyId":"upworkOccupation:engineeringandarchitecture","subcategories":[{"id":"531770282601639949","preferredLabel":"Building & Landscape Architecture","altLabel":null},{"id":"531770282605834240","preferredLabel":"Chemical Engineering","altLabel":null},{"id":"531770282601639950","preferredLabel":"Civil & Structural Engineering","altLabel":null},{"id":"531770282605834241","preferredLabel":"Contract Manufacturing","altLabel":null},{"id":"531770282601639951","preferredLabel":"Electrical & Electronic Engineering","altLabel":null},{"id":"531770282605834242","preferredLabel":"Interior & Trade Show Design","altLabel":["Interior Design"]},{"id":"531770282601639952","preferredLabel":"Energy & Mechanical Engineering","altLabel":null},{"id":"1301900647896092672","preferredLabel":"Physical Sciences","altLabel":null},{"id":"531770282601639948","preferredLabel":"3D Modeling & CAD","altLabel":null}]},{"id":"531770282580668419","preferredLabel":"IT & Networking","altLabel":null,"slug":"it-networking","ontologyId":"upworkOccupation:itandnetworking","subcategories":[{"id":"531770282589057033","preferredLabel":"Database Management & Administration","altLabel":["Database Administration"]},{"id":"531770282589057034","preferredLabel":"ERP\/CRM Software","altLabel":null},{"id":"531770282589057036","preferredLabel":"Information Security & Compliance","altLabel":null},{"id":"531770282589057035","preferredLabel":"Network & System Administration","altLabel":null},{"id":"531770282589057037","preferredLabel":"DevOps & Solution Architecture","altLabel":null}]},{"id":"531770282584862723","preferredLabel":"Legal","altLabel":null,"slug":"legal","ontologyId":"upworkOccupation:legal","subcategories":[{"id":"531770282605834246","preferredLabel":"Corporate & Contract Law","altLabel":null},{"id":"1484275156546932736","preferredLabel":"International & Immigration Law","altLabel":null},{"id":"531770283696353280","preferredLabel":"Finance & Tax Law","altLabel":null},{"id":"1484275408410693632","preferredLabel":"Public Law","altLabel":null}]},{"id":"531770282580668422","preferredLabel":"Sales & Marketing","altLabel":null,"slug":"sales-marketing","ontologyId":"upworkOccupation:salesandmarketing","subcategories":[{"id":"531770282597445636","preferredLabel":"Digital Marketing","altLabel":null},{"id":"531770282597445634","preferredLabel":"Lead Generation & Telemarketing","altLabel":null},{"id":"531770282593251343","preferredLabel":"Marketing, PR & Brand Strategy","altLabel":null}]},{"id":"531770282584862720","preferredLabel":"Translation","altLabel":["Translation Category"],"slug":"translation","ontologyId":"upworkOccupation:translationcategory","subcategories":[{"id":"1534904461842268160","preferredLabel":"Language Tutoring & Interpretation","altLabel":null},{"id":"531770282601639939","preferredLabel":"Translation & Localization Services","altLabel":null}]},{"id":"531770282580668418","preferredLabel":"Web, Mobile & Software Dev","altLabel":null,"slug":"web-mobile-software-dev","ontologyId":"upworkOccupation:webmobileandsoftwaredev","subcategories":[{"id":"1517518458442309632","preferredLabel":"Blockchain, NFT & Cryptocurrency","altLabel":null},{"id":"1737190722360750082","preferredLabel":"AI Apps & Integration","altLabel":null},{"id":"531770282589057025","preferredLabel":"Desktop Application Development","altLabel":null},{"id":"531770282589057026","preferredLabel":"Ecommerce Development","altLabel":null},{"id":"531770282589057027","preferredLabel":"Game Design & Development","altLabel":null},{"id":"531770282589057024","preferredLabel":"Mobile Development","altLabel":["Mobile Developer"]},{"id":"531770282589057032","preferredLabel":"Other - Software Development","altLabel":null},{"id":"531770282589057030","preferredLabel":"Product Management & Scrum","altLabel":null},{"id":"531770282589057031","preferredLabel":"QA Testing","altLabel":null},{"id":"531770282589057028","preferredLabel":"Scripts & Utilities","altLabel":null},{"id":"531770282589057029","preferredLabel":"Web & Mobile Design","altLabel":null},{"id":"531770282584862733","preferredLabel":"Web Development","altLabel":null}]},{"id":"531770282580668423","preferredLabel":"Writing","altLabel":null,"slug":"writing","ontologyId":"upworkOccupation:writing","subcategories":[{"id":"1534904462131675136","preferredLabel":"Sales & Marketing Copywriting","altLabel":null},{"id":"1301900640421842944","preferredLabel":"Content Writing","altLabel":null},{"id":"531770282597445644","preferredLabel":"Editing & Proofreading Services","altLabel":null},{"id":"531770282597445646","preferredLabel":"Professional & Business Writing","altLabel":["Technical Writing"]}]}]]';
+        return json_decode($data,true);
         $client = $this->getUpworkClient();
         $graphql = new \Upwork\API\Routers\Graphql($client);
         $params['query'] = <<<QUERY
@@ -489,7 +358,6 @@ class UpWorkService extends BaseService {
         //     ]
         // ];
         $response = $graphql->execute($params);
-        // dd($response);
         $data = $response->data;
         $ids = [];
         foreach($data as $category)
@@ -498,7 +366,7 @@ class UpWorkService extends BaseService {
         }
         return $this->successfullApiResponse($ids);
     }
-    public function skills()
+    public function skills($limit = 100,$offset = 0)
     {
         $client = $this->getUpworkClient();
         $graphql = new \Upwork\API\Routers\Graphql($client);
@@ -521,12 +389,12 @@ class UpWorkService extends BaseService {
           }
         QUERY;
         $params['variables'] = [
-            "limit" => 100,
-            "offset" => 100,
+            "limit" => $limit,
+            "offset" => $offset,
         ];
         $response = $graphql->execute($params);
-        // dd($response);
         $data = $response->data;
+        if(is_null($data)) return $this->successfullApiResponse([]);
         $ids = [];
         foreach($data as $category)
         {
@@ -536,6 +404,7 @@ class UpWorkService extends BaseService {
     }
     public function timezones()
     {
+
         $client = $this->getUpworkClient();
         $graphql = new \Upwork\API\Routers\Graphql($client);
         $params['query'] = <<<QUERY
@@ -551,6 +420,7 @@ class UpWorkService extends BaseService {
             "offset" => 100,
         ];
         $response = $graphql->execute($params);
+
         // dd($response);
         $data = $response->data;
         $ids = [];

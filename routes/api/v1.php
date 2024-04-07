@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\UpWorkController;
 use App\Models\Job;
 use App\Models\JobSearch;
 use App\Models\Quotation;
+use App\Services\CategoryService;
 use App\Services\JobService;
 use App\Services\ThirdParty\SlackService;
 use App\Services\UpWorkService;
@@ -79,9 +80,29 @@ Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlac
 
 
 Route::get('/upwork/debug/slack',function(){
-    $job= Job::findOrfail(667);
+    $job= Job::latest()->first();
     app(SlackService::class)->sendNotification($job->slack_notification_message);
 });
+Route::get('/upwork/debug/categories',function(){
+    $categories= app(UpWorkService::class)->categories();
+    app(CategoryService::class)->insertCategoriesFromApiResponse($categories);
+});
+Route::get('/upwork/debug/skills',function(){
+    $maxRecords = 200;
+    $start = 0;
+    $offset = 100;
+    $skills = [];
+    while($start < $maxRecords)
+    {
+        $data = app(UpWorkService::class)->skills($offset,$start)->getContent();
+        if(empty($data)) break;
+        $skills = [...$skills,...json_decode($data,true)[0]];
+        $start += $offset;
+    }
+
+    app(CategoryService::class)->insertSkillsFromApiResponse($skills);
+});
+
 Route::get('/upwork/debug/{id}',function($id){
     $jobSearch = JobSearch::findOrfail($id);
     $options =  $jobSearch->toArray();

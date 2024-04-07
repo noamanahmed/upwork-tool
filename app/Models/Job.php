@@ -11,6 +11,7 @@ class Job extends BaseModel
         'description',
     ];
 
+
     function getSlackNotificationMessageAttribute()
     {
         $data = $this->getAdditonalData();
@@ -29,6 +30,7 @@ class Job extends BaseModel
         $maximumRateCurrency = $data['node.job.activityStat.applicationsBidStats.maxRateBid.currency'] ?? 'N/A';
         $minimumRateBid = $data['node.job.activityStat.applicationsBidStats.minRateBid.rawValue'] ?? 'N/A';
         $minimumRateCurrency = $data['node.job.activityStat.applicationsBidStats.minRateBid.currency'] ?? 'N/A';
+        $engagement = $data['node.engagement'] ?? 'N/A';
         $clientTotalHires = $data['node.client.totalHires'] ?? 'N/A';
         $clientTotalSpend = $data['node.client.totalSpent.rawValue'] ?? 'N/A';
         $clientTotalSpendCurrency = $data['node.client.totalSpent.currency'] ?? 'N/A';
@@ -44,43 +46,45 @@ class Job extends BaseModel
         $text .= ' *Job Description* '.$job->description;
         $text .= "\n\n";
         $text .= '*Client Id* : '.$clientId;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client Name* : '.$clientName;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client Budget* : '.$clientBudget;
         $text .= "\n\n";
         $text .= '*Client BudgetCurrency* : '.$clientBudgetCurrency;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client WeeklyBudget* : '.$clientWeeklyBudget;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client WeeklyBudgetCurrency* : '.$clientWeeklyBudgetCurrency;
         $text .= "\n\n";
         $text .= '*Client Type* : '.$clientType;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Average Rate Bid* : '.$averageRateBid;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Average Rate Currency* : '.$averageRateCurrency;
         $text .= "\n\n";
         $text .= '*Maximum Rate Bid* : '.$maximumRateBid;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Maximum Rate Currency* : '.$maximumRateCurrency;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Minimum Rate Bid* : '.$minimumRateBid;
         $text .= "\n\n";
         $text .= '*Minimum Rate Currency* : '.$minimumRateCurrency;
-        $text .= "\n\n";
+        $text .= "\t\t";
+        $text .= '*Engagement* : '.$engagement;
+        $text .= "\t\t";
         $text .= '*Project TotalApplicants* : '.$projectTotalApplicants;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client Total Hires* : '.$clientTotalHires;
         $text .= "\n\n";
         $text .= '*Client Total Spend* : '.$clientTotalSpend;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client Total Spend Currency* : '.$clientTotalSpendCurrency;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client Total Reviews* : '.$clientTotalReviews;
         $text .= "\n\n";
         $text .= '*Client Total Feedback* : '.$clientTotalFeedback;
-        $text .= "\n\n";
+        $text .= "\t\t";
         $text .= '*Client Total Posted Jobs* : '.$clientTotalPostedJobs;
         $text .= "\n\n";
         $text .= '*Job Link*  :' .'https://www.upwork.com/jobs/'.$job->ciphertext;
