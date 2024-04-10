@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1 ;
 use App\Http\Requests\StoreUpWorkRequest;
 use App\Http\Requests\UpdateUpWorkRequest;
 use App\Models\Job;
+use App\Models\JobSearch;
 use App\Models\UpWork;
 use App\Services\JobService;
 use App\Services\UpWorkService;
@@ -27,7 +28,8 @@ class UpWorkController extends BaseController
     }
     public function jobs(Request $request)
     {
-        return $this->upworkService->jobs();
+        $jobSearch = JobSearch::findOrfail(4);
+        return $this->upworkService->jobs($jobSearch->toArray());
     }
 
     public function job($jobId, Request $request)

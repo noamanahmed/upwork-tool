@@ -23,6 +23,10 @@ class Job extends BaseModel
         $clientBudgetCurrency = $data['node.amount.currency'] ?? 'N/A';
         $clientWeeklyBudget = $data['node.weeklyBudget.rawValue'] ?? 'N/A';
         $clientWeeklyBudgetCurrency = $data['node.weeklyBudget.currency'] ?? 'N/A';
+        $clientHourlyBudgetMinimum = $data['node.hourlyBudgetMin.rawValue'] ?? 'N/A';
+        $clientHourlyBudgetMinimumCurrency = $data['node.hourlyBudgetMax.currency'] ?? 'N/A';
+        $clientHourlyBudgetMaximum = $data['node.hourlyBudgetMax.rawValue'] ?? 'N/A';
+        $clientHourlyBudgetMaximumCurrency = $data['node.hourlyBudgetMin.currency'] ?? 'N/A';
         $projectTotalApplicants = $data['node.totalApplicants'] ?? 'N/A';
         $averageRateBid = $data['node.job.activityStat.applicationsBidStats.avgRateBid.rawValue'] ?? 'N/A';
         $averageRateCurrency = $data['node.job.activityStat.applicationsBidStats.avgRateBid.currency'] ?? 'N/A';
@@ -57,6 +61,14 @@ class Job extends BaseModel
         $text .= "\n";
         $text .= '*Client WeeklyBudgetCurrency* : '.$clientWeeklyBudgetCurrency;
         $text .= "\n";
+        $text .= '*Client Hourly Budget Minimum* :'. $clientHourlyBudgetMinimum;
+        $text .= "\n";
+        $text .= '*Client Hourly Budget Minimum Currency* :'. $clientHourlyBudgetMinimumCurrency;
+        $text .= "\n";
+        $text .= '*Client Hourly Budget Maximum* :'. $clientHourlyBudgetMaximum;
+        $text .= "\n";
+        $text .= '*Client Hourly Budget Maximum Currency* :'. $clientHourlyBudgetMaximumCurrency;
+        $text .= "\n";
         $text .= '*Client Type* : '.$clientType;
         $text .= "\n";
         $text .= '*Average Rate Bid* : '.$averageRateBid;
@@ -76,7 +88,7 @@ class Job extends BaseModel
         $text .= '*Project TotalApplicants* : '.$projectTotalApplicants;
         $text .= "\n";
         $text .= '*Client Total Hires* : '.$clientTotalHires;
-        $text .= "\n\n";
+        $text .= "\n";
         $text .= '*Client Total Spend* : '.$clientTotalSpend;
         $text .= "\n";
         $text .= '*Client Total Spend Currency* : '.$clientTotalSpendCurrency;

@@ -292,17 +292,32 @@ class UpWorkService extends BaseService {
 
         $params['variables'] = [
             "searchType" => "JOBS_FEED",
-            "marketPlaceJobFilter" => [
-              "searchExpression_eq" => $query,
-              "pagination_eq" => [
-                "after" => "0",
-                "first" => 10
-              ]
-            ]
         ];
+        $params['variables']["marketPlaceJobFilter"] = [];
+        $params['variables']["marketPlaceJobFilter"]["searchExpression_eq"] = $query;
+        $params['variables']["marketPlaceJobFilter"]["pagination_eq"] = [
+            "after" => "0",
+            "first" => 1
+        ];
+        if($options['is_contract_to_hire'] ?? false)
+        {
+            //TODO
+        }
+        if(!is_null($options['proposals_minimum']))
+        {
+            $params['variables']["marketPlaceJobFilter"]['proposalRange_eq']['rangeStart'] = (int) $options['proposals_minimum'];
+        }
+        if($options['proposals_maximum'] ?? 0)
+        {
+            $params['variables']["marketPlaceJobFilter"]['proposalRange_eq']['rangeEnd'] = (int) $options['proposals_maximum'];
+        }
+        // if($options['is_contract_to_hire'] ?? 0)
+        // {
+        //     $params['variables']["marketPlaceJobFilter"]['contractToHire'] = true;
+        // }
+
 
         $response = $graphql->execute($params);
-
         if(property_exists($response,'message'))
         {
             $this->log('warning',$response->message,[
