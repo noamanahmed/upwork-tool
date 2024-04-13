@@ -58,6 +58,7 @@ class JobService extends BaseService
         if(empty($data)) return;
         foreach ($data as $jobData)
         {
+            if(empty($jobData)) continue;
             $node = $jobData['node'];
             $job = Job::where('upwork_id', $node['id'])->first();
             if (empty($job)) continue;
