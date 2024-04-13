@@ -3,9 +3,11 @@
 
 namespace App\Services;
 
+use App\Models\Job;
 use App\Models\Setting;
 use Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Fluent;
 
@@ -614,6 +616,66 @@ class UpWorkService extends BaseService {
 
         $client = new \Upwork\API\Client($config);
         return $client;
+    }
+    public function analytics()
+    {
+        $response = [];
+        $jobsStats = [];
+        $jobsStatsIntervals = [
+            [
+                'key' => 'day',
+                'start_date' => now()->subDay()->format('Y-m-d'),
+                'end_date' => now()->format('Y-m-d'),
+            ],
+            [
+                'key' => 'previous_day',
+                'start_date' => now()->subDays(2)->startOfDay()->format('Y-m-d H:i:s'), // 2 days ago
+                'end_date' => now()->subDays(1)->endOfDay()->format('Y-m-d H:i:s'), // 1 day ago
+            ],
+            [
+                'key' => 'week',
+                'start_date' => now()->subWeek()->startOfWeek()->format('Y-m-d H:i:s'),
+                'end_date' => now()->startOfWeek()->format('Y-m-d H:i:s'),
+            ],
+            [
+                'key' => 'previous_week',
+                'start_date' => now()->subWeeks(2)->startOfWeek()->format('Y-m-d H:i:s'), // 2 weeks ago
+                'end_date' => now()->subWeeks(1)->startOfWeek()->subSeconds(1)->format('Y-m-d H:i:s'), // 1 week ago (end of previous week)
+            ],
+            [
+                'key' => 'month',
+                'start_date' => now()->subMonth()->startOfMonth()->format('Y-m-d H:i:s'),
+                'end_date' => now()->startOfMonth()->format('Y-m-d H:i:s'),
+            ],
+            [
+                'key' => 'previous_month',
+                'start_date' => now()->subMonths(2)->startOfMonth()->format('Y-m-d H:i:s'), // 2 months ago
+                'end_date' => now()->subMonths(1)->startOfMonth()->subSeconds(1)->format('Y-m-d H:i:s'), // 1 month ago (end of previous month)
+            ],
+            [
+                'key' => 'year',
+                'start_date' => now()->subYear()->startOfYear()->format('Y-m-d H:i:s'),
+                'end_date' => now()->startOfYear()->format('Y-m-d H:i:s'),
+            ],
+            [
+                'key' => 'previous_year',
+                'start_date' => now()->subYears(2)->startOfYear()->format('Y-m-d H:i:s'), // 2 years ago
+                'end_date' => now()->subYears(1)->startOfYear()->subSeconds(1)->format('Y-m-d H:i:s'), // 1 year ago (end of previous year)
+            ],
+        ];
+
+        foreach($jobsStatsIntervals as $interval)
+        {
+            $response[$interval['key']] = Job::join('job_searches_jobs_pivot', 'jobs.id', '=', 'job_searches_jobs_pivot.job_id')
+                ->join('job_searches', 'job_searches_jobs_pivot.job_search_id', '=', 'job_searches.id')
+                ->where('jobs.created_at','>=',$interval['start_date'])
+                ->where('jobs.created_at','<=',$interval['end_date'])
+                ->groupBy('job_searches.id', 'job_searches.name')
+                ->select(DB::raw('job_searches.name as job_search_name'), DB::raw('COUNT(*) as entry_count'))
+                ->get();
+        }
+        // dd($response);
+        return $this->apiResponse($response,200);
     }
     public function log($type,$data,$contenxt = [])
     {

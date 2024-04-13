@@ -39,7 +39,6 @@ class UpWorkController extends BaseController
     public function jobSlackMessage($jobId, Request $request)
     {
         $job = Job::findOrfail($jobId);
-        dd($job->slack_notification_message);
         return $job->slack_notification_message;
     }
 
@@ -67,5 +66,9 @@ class UpWorkController extends BaseController
     public function regions(Request $request)
     {
         return $this->upworkService->regions();
+    }
+    public function analytics(Request $request)
+    {
+        return $this->upworkService->analytics();
     }
 }

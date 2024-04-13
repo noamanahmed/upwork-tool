@@ -75,6 +75,7 @@ Route::get('/upwork/timezones',[UpWorkController::class,'timezones']);
 Route::get('/upwork/languages',[UpWorkController::class,'languages']);
 Route::get('/upwork/countries',[UpWorkController::class,'countries']);
 Route::get('/upwork/regions',[UpWorkController::class,'regions']);
+Route::get('/upwork/analytics',[UpWorkController::class,'analytics']);
 Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
 Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlackMessage']);
 
