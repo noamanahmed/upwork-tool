@@ -81,7 +81,7 @@ class CategoryService extends BaseService{
     public function attachCategoriesToJobsFromApiResponse($data)
     {
         foreach ($data as $jobData) {
-
+            if(empty($jobData)) continue;
             $node = $jobData['node'];
             $job = Job::where('upwork_id', $node['id'])->first();
             if (empty($job)) continue;
