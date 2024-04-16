@@ -644,8 +644,8 @@ class UpWorkService extends BaseService {
             ],
             [
                 'key' => 'month',
-                'start_date' => now()->subMonth()->startOfMonth()->format('Y-m-d H:i:s'),
-                'end_date' => now()->startOfMonth()->format('Y-m-d H:i:s'),
+                'start_date' => now()->startOfMonth()->format('Y-m-d H:i:s'),
+                'end_date' => now()->addMonth()->startOfMonth()->format('Y-m-d H:i:s'),
             ],
             [
                 'key' => 'previous_month',
@@ -654,8 +654,8 @@ class UpWorkService extends BaseService {
             ],
             [
                 'key' => 'year',
-                'start_date' => now()->subYear()->startOfYear()->format('Y-m-d H:i:s'),
-                'end_date' => now()->startOfYear()->format('Y-m-d H:i:s'),
+                'start_date' => now()->startOfYear()->format('Y-m-d H:i:s'),
+                'end_date' => now()->addYear()->startOfYear()->format('Y-m-d H:i:s'),
             ],
             [
                 'key' => 'previous_year',
