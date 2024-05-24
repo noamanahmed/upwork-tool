@@ -28,7 +28,9 @@ class JobSearch extends Command
      */
     public function handle()
     {
-        $JobSearches = ModelsJobSearch::query()->get();
+        $JobSearches = Cache::remember('job_searches', 15 * 60, function () {
+            return ModelsJobSearch::query()->get();
+        });
 
         foreach($JobSearches as $search)
         {
