@@ -299,7 +299,7 @@ class UpWorkService extends BaseService {
         $params['variables']["marketPlaceJobFilter"]["searchExpression_eq"] = $query;
         $params['variables']["marketPlaceJobFilter"]["pagination_eq"] = [
             "after" => "0",
-            "first" => 1
+            "first" => 20
         ];
         if($options['is_contract_to_hire'] ?? false)
         {
