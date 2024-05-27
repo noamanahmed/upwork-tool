@@ -31,7 +31,7 @@ class SendJobSlackNotifications extends Command
     {
         $jobSearches = JobSearch::whereHas('jobs',function($query){
             return $query->where('job_searches_jobs_pivot.is_slack_webhook_sent',0);
-        })->toRawSql();
+        })->take(10)->get();
         
         $webhookSent = [];
         $locks = [];
