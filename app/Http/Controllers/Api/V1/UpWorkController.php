@@ -26,9 +26,8 @@ class UpWorkController extends BaseController
     {
         return $this->upworkService->code();
     }
-    public function jobs(Request $request)
-    {
-        $jobSearch = JobSearch::findOrfail(4);
+    public function jobs(JobSearch $jobSearch,Request $request)
+    {        
         return $this->upworkService->jobs($jobSearch->toArray());
     }
 
