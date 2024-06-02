@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Enums\JobStatusEnum;
 use App\Models\Job;
 use App\Models\JobSearchPivot;
+use App\Models\RssJobs;
 use App\Repositories\JobRepository;
 use App\Transformers\JobCollectionTransformer;
 use App\Transformers\JobTransformer;
@@ -68,6 +69,31 @@ class JobService extends BaseService
                 if(!is_null($jobSearchPivot)) continue;
                 DB::beginTransaction();
                 $jobSearch->jobs()->attach($job);
+                DB::commit();
+                $lock->release();
+            }
+        }
+    }
+    public function insertRssJobs($data,$rssJobSearch)
+    {
+        if(empty($data)) return;
+        foreach ($data as $job)
+        {
+            if(empty($job)) continue;
+            $cipherText = $job['ciphertext'];
+            $job = RssJobs::where('ciphertext', $job['ciphertext'])->first();
+            $lock = Cache::lock('job_service_insert_rss_job_' . $cipherText.'_rss_job_searches_'.$rssJobSearch->id, 10);
+            if ($lock->get()) {
+                DB::beginTransaction();
+                $job = RssJobs::where('ciphertext', $cipherText)->where('rss_job_search_id',$rssJobSearch->id)->first();
+                if (!is_null($job)) {
+                    DB::rollBack();
+                    continue;
+                }
+                $job = new RssJobs();
+                $job->ciphertext = $cipherText;
+                $job->rss_job_search_id = $rssJobSearch->id;
+                $job->save();
                 DB::commit();
                 $lock->release();
             }

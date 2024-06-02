@@ -69,6 +69,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
 Route::get('/upwork/auth',[UpWorkController::class,'init']);
 Route::get('/upwork/code',[UpWorkController::class,'code']);
 Route::get('/upwork/jobs/{jobSearch}',[UpWorkController::class,'jobs']);
+Route::get('/upwork/rss-jobs/{jobSearch}',[UpWorkController::class,'rssJobs']);
 Route::get('/upwork/categories',[UpWorkController::class,'categories']);
 Route::get('/upwork/skills',[UpWorkController::class,'skills']);
 Route::get('/upwork/timezones',[UpWorkController::class,'timezones']);
@@ -108,8 +109,9 @@ Route::get('/upwork/debug/{id}',function($id){
     $jobSearch = JobSearch::findOrfail($id);
     $options =  $jobSearch->toArray();
     $cacheKey = 'upwork_jobs_'.$id;
-    $jobs = Cache::get($cacheKey);
-
+    // $jobs = Cache::get($cacheKey);
+    $jobs = app(UpWorkService::class)->jobs($options);
+    return $jobs;
     if(empty($jobs))
     {
         $jobs = app(UpWorkService::class)->jobs($options);

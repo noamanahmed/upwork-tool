@@ -3,7 +3,7 @@
 namespace App\Models;
 
 
-class JobSearch extends BaseModel
+class RssJobSearches extends BaseModel
 {
     protected $fillable = [
         'name',
@@ -12,11 +12,11 @@ class JobSearch extends BaseModel
 
     public function jobs()
     {
-        return $this->belongsToMany(Job::class,'job_searches_jobs_pivot')->withPivot(['is_slack_webhook_sent']);
+        return $this->hasMany(RssJobs::class,'rss_job_search_id');
     }
-
     public function latestJobs()
     {
         return $this->jobs()->take(100)->latest();
     }
+
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Models\Job;
 use App\Models\Setting;
+use App\Services\ThirdParty\RssService;
 use Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -338,7 +339,20 @@ class UpWorkService extends BaseService {
         }
         return $data;
     }
-
+    public function rssJobs($rssJobSearch)
+    {
+        $rssData = app(RssService::class)->setFeedUrl($rssJobSearch->url)->parse();
+        $rssJobs = [];
+        foreach ($rssData['entries'] ?? [] as $entry)
+        {
+            $rssJobs[] = [
+                'link' => $entry['link'],
+                'ciphertext' => $this->getCipherTextFromRssUrl($entry['link'])
+            ];
+        }
+        return $rssJobs;
+        dd($rssJobSearch->url);
+    }
 
     public function categories()
     {
@@ -680,6 +694,21 @@ class UpWorkService extends BaseService {
     public function log($type,$data,$contenxt = [])
     {
         Log::$type($data,$contenxt);
+    }
+    public function getCipherTextFromRssUrl($url)
+    {
+        $url = urldecode($url);
+        $startPos = strpos($url, '~');
+        $endPos = strpos($url, '?');
+
+        // Check if both tilde and question mark are found in the URL
+        if ($startPos !== false && $endPos !== false && $startPos < $endPos) {
+            // Extract the substring from the tilde to the question mark
+            return substr($url, $startPos, $endPos - $startPos);
+        } else {
+            // Return null if the pattern is not found
+            return null;
+        }
     }
 }
 

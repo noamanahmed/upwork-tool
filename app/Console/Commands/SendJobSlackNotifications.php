@@ -29,15 +29,15 @@ class SendJobSlackNotifications extends Command
      */
     public function handle()
     {
-        $jobSearches = JobSearch::whereHas('jobs',function($query){
+        $jobSearches = JobSearch::whereHas('latestJobs',function($query){
             return $query->where('job_searches_jobs_pivot.is_slack_webhook_sent',0);
         })->take(10)->get();
-        
+
         $webhookSent = [];
         $locks = [];
         foreach($jobSearches as $jobSearch)
         {
-            foreach($jobSearch->jobs as $job)
+            foreach($jobSearch->latestJobs as $job)
             {
 
                 $lock = Cache::lock('slack_job_notification_for_job_' . $job->id.'_job_search_'.$jobSearch->id, 30);

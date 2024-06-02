@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Client\GuzzleClient;
 use App\Database\ConnectionPooler;
 use App\Models\Language;
 use App\Router\ResourceRegistrar;
@@ -51,6 +52,8 @@ class AppServiceProvider extends ServiceProvider
             $language = Language::where('code',$header)->firstOrFail();
             return $language->translations;
         });
+
+        \Laminas\Feed\Reader\Reader::setHttpClient(new GuzzleClient());
 
     }
 

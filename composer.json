@@ -8,6 +8,7 @@
         "php": "^8.1",
         "guzzlehttp/guzzle": "^7.2",
         "http-interop/http-factory-guzzle": "^1.2",
+        "laminas/laminas-feed": "^2.22",
         "laravel/framework": "^10.10",
         "laravel/horizon": "^5.23",
         "laravel/octane": "^2.3",

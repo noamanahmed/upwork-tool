@@ -6,6 +6,7 @@ use App\Http\Requests\StoreUpWorkRequest;
 use App\Http\Requests\UpdateUpWorkRequest;
 use App\Models\Job;
 use App\Models\JobSearch;
+use App\Models\RssJobSearches;
 use App\Models\UpWork;
 use App\Services\JobService;
 use App\Services\UpWorkService;
@@ -27,8 +28,12 @@ class UpWorkController extends BaseController
         return $this->upworkService->code();
     }
     public function jobs(JobSearch $jobSearch,Request $request)
-    {        
+    {
         return $this->upworkService->jobs($jobSearch->toArray());
+    }
+    public function rssJobs(RssJobSearches $jobSearch,Request $request)
+    {
+        return $this->upworkService->rssJobs($jobSearch);
     }
 
     public function job($jobId, Request $request)
