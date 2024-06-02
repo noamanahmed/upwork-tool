@@ -44,6 +44,7 @@ class SendJobSlackNotifications extends Command
                 if (!$lock->get()) continue;
                 $job->refresh();
                 if($job->pivot->is_slack_webhook_sent) continue;
+                if(empty($jobSearch->slack_webhook_url)) continue;
                 app(SlackService::class)->setWebhookUrl($jobSearch->slack_webhook_url)->sendNotification($job->slack_notification_message);
                 $webhookSent[] = $job->pivot;
                 $locks[] = $lock;

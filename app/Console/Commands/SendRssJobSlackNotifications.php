@@ -43,11 +43,11 @@ class SendRssJobSlackNotifications extends Command
                 $lock = Cache::lock('slack_job_notification_for_rss_job_' . $rssJob->id.'_rss_job_search_'.$jobSearch->id, 30);
                 if (!$lock->get()) continue;
                 $rssJob->refresh();
-
+                if($rssJob->is_slack_webhook_sent) continue;
+                if(empty($jobSearch->slack_webhook_url)) continue;
                 $job = $rssJob->job;
                 if(empty($job)) continue;
-
-                // app(SlackService::class)->setWebhookUrl($jobSearch->slack_webhook_url)->sendNotification($job->slack_notification_message);
+                app(SlackService::class)->setWebhookUrl($jobSearch->slack_webhook_url)->sendNotification($job->slack_notification_message);
                 $webhookSent[] = $rssJob;
                 $locks[] = $lock;
             }
@@ -55,9 +55,8 @@ class SendRssJobSlackNotifications extends Command
 
     foreach($webhookSent as $key => $job)
         {
-            $webhookSent[$key]->update([
-                'is_slack1_webhook_sent' => 1
-            ]);
+            $job->is_slack_webhook_sent = 1;
+            $job->save();
         }
 
 
@@ -67,6 +66,5 @@ class SendRssJobSlackNotifications extends Command
             $lock->release();
         }
 
-        dd($webhookSent);
     }
 }
