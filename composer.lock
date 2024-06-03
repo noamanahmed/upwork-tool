@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4c7d27ea09a5b9b30173085a0b5b7e47",
+    "content-hash": "1e788dcd2c9fa57a09969aeb887326f2",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3202,6 +3202,75 @@
                 "source": "https://github.com/jmespath/jmespath.php/tree/2.7.0"
             },
             "time": "2023-08-25T10:54:48+00:00"
+        },
+        {
+            "name": "muhammadhuzaifa/telescope-guzzle-watcher",
+            "version": "v2.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/huzaifaarain/telescope-guzzle-watcher.git",
+                "reference": "f8f38a99cfdba1edf697471263af09b01d6f56e2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/huzaifaarain/telescope-guzzle-watcher/zipball/f8f38a99cfdba1edf697471263af09b01d6f56e2",
+                "reference": "f8f38a99cfdba1edf697471263af09b01d6f56e2",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "illuminate/contracts": "^9.0|^10.0",
+                "laravel/telescope": "^4.0",
+                "php": "^8.0.2|^8.1|^8.2",
+                "spatie/laravel-package-tools": "^1.14.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^7.9|^6.0",
+                "orchestra/testbench": "^8.0|^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "MuhammadHuzaifa\\TelescopeGuzzleWatcher\\TelescopeGuzzleWatcherServiceProvider"
+                    ],
+                    "aliases": {
+                        "TelescopeGuzzleWatcher": "MuhammadHuzaifa\\TelescopeGuzzleWatcher\\Facades\\TelescopeGuzzleWatcher"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "MuhammadHuzaifa\\TelescopeGuzzleWatcher\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Muhammad Huzaifa",
+                    "email": "huzaifa.itgroup@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Telescope Guzzle Watcher provide a custom watcher for intercepting http requests made via guzzlehttp/guzzle php library. The package uses the on_stats request option for extracting the request/response data. The watcher intercept and log the request into the Laravel Telescope HTTP Client Watcher.",
+            "homepage": "https://github.com/muhammadhuzaifa/telescope-guzzle-watcher",
+            "keywords": [
+                "Muhammad Huzaifa",
+                "custom http client watcher",
+                "guzzle telescope watcher",
+                "guzzlehttp telescope watcher",
+                "laravel",
+                "telescope"
+            ],
+            "support": {
+                "issues": "https://github.com/huzaifaarain/telescope-guzzle-watcher/issues",
+                "source": "https://github.com/huzaifaarain/telescope-guzzle-watcher/tree/v2.0.1"
+            },
+            "time": "2023-06-03T23:34:14+00:00"
         },
         {
             "name": "nesbot/carbon",

@@ -19,6 +19,7 @@
         "laravel/tinker": "^2.8",
         "league/flysystem-aws-s3-v3": "^3.24",
         "meilisearch/meilisearch-php": "^1.6",
+        "muhammadhuzaifa/telescope-guzzle-watcher": "^2.0",
         "spatie/laravel-permission": "^6.3",
         "spatie/laravel-query-builder": "^5.0",
         "upwork/php-upwork-oauth2": "^2.4"

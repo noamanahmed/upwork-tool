@@ -343,15 +343,20 @@ class UpWorkService extends BaseService {
     {
         $rssData = app(RssService::class)->setFeedUrl($rssJobSearch->url)->parse();
         $rssJobs = [];
+        if(empty($rssData['entries']))
+        {
+            abort(429);
+        }
         foreach ($rssData['entries'] ?? [] as $entry)
         {
             $rssJobs[] = [
                 'link' => $entry['link'],
-                'ciphertext' => $this->getCipherTextFromRssUrl($entry['link'])
+                'ciphertext' => $this->getCipherTextFromRssUrl($entry['link']),
+                'timestamp' => now(),
+                'raw' => $entry,
             ];
         }
         return $rssJobs;
-        dd($rssJobSearch->url);
     }
 
     public function categories()
