@@ -17,6 +17,7 @@ class RssJobSearch implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $jobs = [];
     /**
      * Create a new job instance.
      */
@@ -32,6 +33,7 @@ class RssJobSearch implements ShouldQueue
     {
         $options =  $this->rssJobSearch->toArray();
         $jobs = app(UpWorkService::class)->rssJobs($this->rssJobSearch);
+        $this->jobs = $jobs;
         app(JobService::class)->insertRssJobs($jobs,$this->rssJobSearch);
 
         // Check if the lock exists
