@@ -12,13 +12,17 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('upwork:search')->everyTenSeconds();
-        $schedule->command('upwork:send-slack-notifications')->everyFiveSeconds();
-        $schedule->command('telescope:prune --hours=96')->everyThreeHours();
-        $schedule->command('upwork:prune-telescope')->everyFifteenMinutes();
-
         $schedule->command('upwork:rss-search')->everyTenSeconds();
+        $schedule->command('upwork:search')->everyTenSeconds();
+
         $schedule->command('upwork:send-rss-slack-notifications')->everyFiveSeconds();
+        $schedule->command('upwork:send-slack-notifications')->everyFiveSeconds();
+
+
+
+
+        $schedule->command('upwork:prune-telescope')->everyFifteenMinutes();
+        $schedule->command('telescope:prune --hours=96')->everyThreeHours();
     }
 
     /**
