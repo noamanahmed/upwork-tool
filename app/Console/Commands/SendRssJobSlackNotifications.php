@@ -31,7 +31,7 @@ class SendRssJobSlackNotifications extends Command
     {
         $jobSearches = RssJobSearches::whereHas('latestJobs',function($query){
             return $query->where('is_slack_webhook_sent',0);
-        })->take(10)->get();
+        })->take(10)->with(['latestJobs'])->get();
         $webhookSent = [];
         $locks = [];
         foreach($jobSearches as $jobSearch)
