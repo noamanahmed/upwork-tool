@@ -55,6 +55,8 @@ class JobService extends BaseService
                     'ciphertext' => $node['ciphertext'],
                     'description' => $node['job.content.description'],
                     'json' => json_encode($jobData),
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
                 $locks[] = $lock;
             }
@@ -99,6 +101,8 @@ class JobService extends BaseService
                 $jobPivots[] = [
                     'job_search_id' => $jobSearch->id,
                     'job_id' => $job->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
             }
         }
@@ -131,6 +135,8 @@ class JobService extends BaseService
                 $rssJobs[] = [
                     'ciphertext' => $cipherText,
                     'rss_job_search_id' => $rssJobSearch->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
                 $locks[] = $lock;
             }
