@@ -12,6 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class RssJobSearch implements ShouldQueue
 {
@@ -34,6 +35,7 @@ class RssJobSearch implements ShouldQueue
         $options =  $this->rssJobSearch->toArray();
         $jobs = app(UpWorkService::class)->rssJobs($this->rssJobSearch);
         $this->jobs = $jobs;
+        Log::debug($jobs);
         app(JobService::class)->insertRssJobs($jobs,$this->rssJobSearch);
 
         // Check if the lock exists
