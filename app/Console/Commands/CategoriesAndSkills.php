@@ -44,6 +44,7 @@ class CategoriesAndSkills extends Command
                 $data = Cache::get($cacheKey);
             }else{
                 $data = json_decode(app(UpWorkService::class)->skills($offset,$start)->getContent(),true);
+                sleep(1);
                 if(empty($data)) break;
                 Cache::set($cacheKey,$data,3600);
             }

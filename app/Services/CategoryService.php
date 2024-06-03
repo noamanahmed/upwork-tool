@@ -6,6 +6,8 @@ namespace App\Services;
 use App\Enums\CategoryStatusEnum;
 use App\Models\Category;
 use App\Models\Job;
+use App\Models\JobCategories;
+use App\Models\JobSkills;
 use App\Models\Skill;
 use App\Repositories\CategoryRepository;
 use App\Transformers\CategoryCollectionTransformer;
@@ -80,43 +82,76 @@ class CategoryService extends BaseService{
     }
     public function attachCategoriesToJobsFromApiResponse($data)
     {
+        if(empty($data)) return;
+        $locks = [];
+        $categories = [];
+        $pivotSkills = [];
+        $pivotCategories = [];
+        foreach ($data as $jobData) {
+            if (empty($jobData)) continue;
+            $node = $jobData['node'];
+            $jobIds[] = $node['id'];
+        }
+        $alreadyExistingJobs = Job::whereIn('upwork_id',$jobIds)->get()->keyBy('upwork_id');
+        $alreadyExistingJobSkills = JobSkills::whereIn('job_id',$alreadyExistingJobs->pluck('id')->toArray())->get()->keyBy('job_id');
+        $alreadyExistingJobCategories = JobCategories::whereIn('job_id',$alreadyExistingJobs->pluck('id')->toArray())->get()->keyBy('job_id');
         foreach ($data as $jobData) {
             if(empty($jobData)) continue;
             $node = $jobData['node'];
-            $job = Job::where('upwork_id', $node['id'])->first();
+            $job = $alreadyExistingJobs[$node['id']] ?? null;
             if (empty($job)) continue;
             $categoriesIds = [];
             $lock = Cache::lock('job_service_attach_categories_and_skills_for_job_' . $node['id'], 30);
             if (!$lock->get()) {
                 continue;
             }
-            if(!empty($node['job']['classification']['category']['id'] ?? false))
+            if(!empty($node['job']['classification']['category']['id'] ?? false) && empty($alreadyExistingJobCategories[$job->id] ?? null) )
             {
                 $categoriesIds[] = $node['job']['classification']['category']['id'];
             }
-            if(!empty($node['job']['classification']['subCategory']['id'] ?? false))
+            if(!empty($node['job']['classification']['subCategory']['id'] ?? false) && empty($alreadyExistingJobCategories[$job->id] ?? null) )
             {
                 $categoriesIds[] = $node['job']['classification']['subCategory']['id'];
             }
             $skillsIds = [];
-            foreach($node['job']['classification']['additionalSkills'] ?? [] as $skill)
+            if(empty($alreadyExistingJobSkills[$job->id] ?? null))
             {
-                $skillsIds[] = $skill['id'];
+                foreach($node['job']['classification']['additionalSkills'] ?? [] as $skill)
+                {
+                    $skillsIds[] = $skill['id'];
+                }
+                foreach($node['job']['classification']['skills'] ?? [] as $skill)
+                {
+                    $skillsIds[] = $skill['id'];
+                }
             }
-            foreach($node['job']['classification']['skills'] ?? [] as $skill)
+            foreach($skillsIds as $skillId)
             {
-                $skillsIds[] = $skill['id'];
+                $pivotSkills[] = [
+                    'job_id' => $job->id,
+                    'skill_id' => $skillId,
+                ];
             }
-            if(!empty($skillsIds))
+            foreach($categoriesIds as $categoryId)
             {
-                $skills = Skill::whereIn('id',$skillsIds)->get();
-                $job->skills()->sync($skills);
+                $pivotCategories[] = [
+                    'job_id' => $job->id,
+                    'category_id' => $categoryId,
+                ];
             }
-            if(!empty($categoriesIds))
-            {
-                $categories = Category::whereIn('id',$categoriesIds)->get();
-                $job->categories()->sync($categories);
-            }
+            $locks[] = $lock;
+        }
+        if(!empty($pivotCategories))
+        {
+            JobCategories::insert($pivotCategories);
+        }
+
+        if(!empty($pivotSkills))
+        {
+            JobSkills::insert($pivotSkills);
+        }
+        foreach($locks as $lock)
+        {
             $lock->release();
         }
     }

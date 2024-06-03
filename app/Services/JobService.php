@@ -28,50 +28,87 @@ class JobService extends BaseService
 
     public function insertJobsFromApiResponse($data)
     {
+        $locks = [];
+        $jobs = [];
+        $jobIds = [];
+        foreach ($data as $jobData) {
+            if (empty($jobData)) continue;
+            $node = $jobData['node'];
+            $jobIds[] = $node['id'];
+        }
 
+        $alreadyExistingJobs = Job::whereIn('upwork_id',$jobIds)->get()->keyBy('upwork_id')->toArray();
         foreach ($data as $jobData) {
             if (empty($jobData)) continue;
             $node = $jobData['node'];
             $node = Arr::dot($node);
             $lock = Cache::lock('job_service_insert_job_' . $node['id'], 10);
             if ($lock->get()) {
-                DB::beginTransaction();
-                $job = Job::where('upwork_id', $node['id'])->first();
+                $job = $alreadyExistingJobs[$node['id']] ?? null;
                 if (!is_null($job)) {
-                    DB::rollBack();
+                    $lock->release();
                     continue;
                 }
-                $job = new Job();
-                $job->upwork_id = $node['id'];
-                // $job->client_id = $node['job.ownership.team.id'];
-                $job->title = $node['job.content.title'];
-                $job->ciphertext = $node['ciphertext'];
-                $job->description = $node['job.content.description'];
-                $job->json = json_encode($jobData);
-                $job->save();
-                DB::commit();
-                $lock->release();
+                $jobs[] = [
+                    'upwork_id' => $node['id'],
+                    'title' => $node['job.content.title'],
+                    'ciphertext' => $node['ciphertext'],
+                    'description' => $node['job.content.description'],
+                    'json' => json_encode($jobData),
+                ];
+                $locks[] = $lock;
             }
+        }
+
+        if(!empty($jobs))
+        {
+            Job::insert($jobs);
+        }
+        foreach($locks as $lock)
+        {
+            $lock->release();
         }
     }
     public function attachJobsToJobSearchesFromApiResponse($data,$jobSearch)
     {
         if(empty($data)) return;
+        $locks = [];
+        $jobPivots = [];
+        $jobIds = [];
+        foreach ($data as $jobData) {
+            if (empty($jobData)) continue;
+            $node = $jobData['node'];
+            $jobIds[] = $node['id'];
+        }
+        $alreadyExistingJobs = Job::whereIn('upwork_id',$jobIds)->get()->keyBy('upwork_id');
+        $alreadyExistingJobSearchPivot = JobSearchPivot::where('job_search_id', $jobSearch->id)->whereIn('job_id',$alreadyExistingJobs->pluck('id')->toArray())->get()->keyBy('job_id');
+
         foreach ($data as $jobData)
         {
             if(empty($jobData)) continue;
             $node = $jobData['node'];
-            $job = Job::where('upwork_id', $node['id'])->first();
+            $job = $alreadyExistingJobs[$node['id']] ?? null;
             if (empty($job)) continue;
             $lock = Cache::lock('job_service_insert_job_' . $job->id . '_job_searches_'.$jobSearch->id, 30);
             if ($lock->get()) {
-                $jobSearchPivot = JobSearchPivot::where('job_id', $job->id)->where('job_search_id', $jobSearch->id)->first();
-                if(!is_null($jobSearchPivot)) continue;
-                DB::beginTransaction();
-                $jobSearch->jobs()->attach($job);
-                DB::commit();
-                $lock->release();
+                $jobSearchPivot = $alreadyExistingJobSearchPivot[$job->id] ?? null;
+                if(!is_null($jobSearchPivot)){
+                    $lock->release();
+                    continue;
+                };
+                $jobPivots[] = [
+                    'job_search_id' => $jobSearch->id,
+                    'job_id' => $job->id,
+                ];
             }
+        }
+        if(!empty($jobPivots))
+        {
+            JobSearchPivot::insert($jobPivots);
+        }
+        foreach($locks as $lock)
+        {
+            $lock->release();
         }
     }
     public function insertRssJobs($data,$rssJobSearch)
