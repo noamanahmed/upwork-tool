@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\UpWorkController;
 use App\Models\Job;
 use App\Models\JobSearch;
 use App\Models\Quotation;
+use App\Models\RssJobSearches;
 use App\Services\CategoryService;
 use App\Services\JobService;
 use App\Services\ThirdParty\SlackService;
@@ -119,12 +120,16 @@ Route::get('/upwork/debug/{id}',function($id){
     }
 
 
+
     app(JobService::class)->insertJobsFromApiResponse($jobs);
     app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$jobSearch);
     app(CategoryService::class)->attachCategoriesToJobsFromApiResponse($jobs);
 });
-
-
+Route::get('/upwork/debug/rss/{id}',function($id){
+    $rssJobSearch = RssJobSearches::findOrfail($id);
+    $jobs = app(UpWorkService::class)->rssJobs($rssJobSearch);
+    app(JobService::class)->insertRssJobs($jobs,$rssJobSearch);
+});
 Route::fallback(function(){
     abort(404);
 });

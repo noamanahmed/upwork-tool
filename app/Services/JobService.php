@@ -77,26 +77,34 @@ class JobService extends BaseService
     public function insertRssJobs($data,$rssJobSearch)
     {
         if(empty($data)) return;
+        $alreadyExistingJobs = RssJobs::whereIn('ciphertext',collect($data)->pluck('ciphertext')->toArray())->get()->keyBy('ciphertext')->toArray();
+        $locks = [];
+        $rssJobs = [];
         foreach ($data as $job)
         {
             if(empty($job)) continue;
             $cipherText = $job['ciphertext'];
-            $job = RssJobs::where('ciphertext', $job['ciphertext'])->first();
             $lock = Cache::lock('job_service_insert_rss_job_' . $cipherText.'_rss_job_searches_'.$rssJobSearch->id, 10);
             if ($lock->get()) {
-                DB::beginTransaction();
-                $job = RssJobs::where('ciphertext', $cipherText)->where('rss_job_search_id',$rssJobSearch->id)->first();
+                $job = $alreadyExistingJobs[$cipherText] ?? null ;
                 if (!is_null($job)) {
-                    DB::rollBack();
+                    $lock->release();
                     continue;
                 }
-                $job = new RssJobs();
-                $job->ciphertext = $cipherText;
-                $job->rss_job_search_id = $rssJobSearch->id;
-                $job->save();
-                DB::commit();
-                $lock->release();
+                $rssJobs[] = [
+                    'ciphertext' => $cipherText,
+                    'rss_job_search_id' => $rssJobSearch->id,
+                ];
+                $locks[] = $lock;
             }
+        }
+        if(!empty($rssJobs))
+        {
+            RssJobs::insert($rssJobs);
+        }
+        foreach($locks as $lock)
+        {
+            $lock->release();
         }
     }
 }
