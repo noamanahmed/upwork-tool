@@ -259,6 +259,12 @@ class UpWorkService extends BaseService {
                           }
                         }
                       }
+                      clientCompany {
+                        id
+                      }
+                      clientCompanyPublic{
+                        id
+                      }
                     }
                     client {
                         totalHires
@@ -269,6 +275,13 @@ class UpWorkService extends BaseService {
                             rawValue
                             displayValue
                             currency
+                        }
+                        location {
+                            city
+                            country
+                            timezone
+                            state
+                            offsetToUTC
                         }
                         verificationStatus
                         companyRid
@@ -302,10 +315,28 @@ class UpWorkService extends BaseService {
             "after" => "0",
             "first" => 20
         ];
-        if($options['is_contract_to_hire'] ?? false)
+
+        if($options['is_payment_verified'] ?? false)
         {
-            //TODO
+            $params['variables']["marketPlaceJobFilter"]['verifiedPaymentOnly_eq'] = true;
         }
+        if(!is_null($options['client_previous_hired_minimum']))
+        {
+            $params['variables']["marketPlaceJobFilter"]['clientHiresRange_eq']['rangeStart'] = (int) $options['client_previous_hired_minimum'];
+        }
+        if($options['client_previous_hired_maximum'] ?? 0)
+        {
+            $params['variables']["marketPlaceJobFilter"]['clientHiresRange_eq']['rangeEnd'] = (int) $options['client_previous_hired_maximum'];
+        }
+        if(!is_null($options['feedback_minimum']))
+        {
+            $params['variables']["marketPlaceJobFilter"]['clientFeedBackRange_eq']['rangeStart'] = (float) $options['feedback_minimum'];
+        }
+        if($options['feedback_maximum'] ?? 0)
+        {
+            $params['variables']["marketPlaceJobFilter"]['clientFeedBackRange_eq']['rangeEnd'] = (float) $options['feedback_maximum'];
+        }
+
         if(!is_null($options['proposals_minimum']))
         {
             $params['variables']["marketPlaceJobFilter"]['proposalRange_eq']['rangeStart'] = (int) $options['proposals_minimum'];
@@ -314,16 +345,24 @@ class UpWorkService extends BaseService {
         {
             $params['variables']["marketPlaceJobFilter"]['proposalRange_eq']['rangeEnd'] = (int) $options['proposals_maximum'];
         }
-        // if($options['is_contract_to_hire'] ?? 0)
-        // {
-        //     $params['variables']["marketPlaceJobFilter"]['contractToHire'] = true;
-        // }
+        if(!empty($options['location'] ?? null))
+        {
+            $params['variables']["marketPlaceJobFilter"]['locations_any'] = $options['location'];
+        }
 
 
         $response = $graphql->execute($params);
         if(property_exists($response,'message'))
         {
             $this->log('warning',$response->message,[
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
+        if(!property_exists($response,'data'))
+        {
+            $this->log('warning','API Request failed to fetch data',[
+                'reponse' => $response,
                 'client' => (array) $client->getServer()->getInstance()
             ]);
             return [];
@@ -341,7 +380,8 @@ class UpWorkService extends BaseService {
     }
     public function rssJobs($rssJobSearch)
     {
-        $rssData = app(RssService::class)->setFeedUrl($rssJobSearch->url)->parse();
+        $url = $rssJobSearch->url ;//. '&t='.urlencode(now());
+        $rssData = app(RssService::class)->setFeedUrl($url)->parse();
         $rssJobs = [];
         if(empty($rssData['entries']))
         {
@@ -350,6 +390,8 @@ class UpWorkService extends BaseService {
         foreach ($rssData['entries'] ?? [] as $entry)
         {
             $rssJobs[] = [
+                'rssLink' => $url,
+                'dateModified' => $rssData['dateModified'],
                 'link' => $entry['link'],
                 'ciphertext' => $this->getCipherTextFromRssUrl($entry['link']),
                 'timestamp' => now(),

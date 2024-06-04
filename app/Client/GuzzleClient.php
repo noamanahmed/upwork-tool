@@ -19,7 +19,7 @@ class GuzzleClient implements FeedReaderHttpClientInterface
      */
     public function __construct(GuzzleClientInterface $client = null)
     {
-        $this->client = $client ?: new Client();
+        $this->client = $client ?: app(\GuzzleHttp\Client::class);
     }
 
     /**

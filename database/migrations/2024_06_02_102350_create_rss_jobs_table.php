@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('rss_jobs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('rss_job_search_id')->constrained('rss_job_searches')->onDelete('cascade');
-            $table->string('ciphertext');
-            $table->unique(['rss_job_search_id','ciphertext']);
+            $table->mediumText('ciphertext');
             $table->boolean('is_slack_webhook_sent')->default(0)->index();
             $table->datetimes();
         });

@@ -19,6 +19,17 @@ return new class extends Migration
             $table->string('title');
             $table->mediumText('description');
             $table->boolean('is_slack_webhook_sent')->default(0)->index();
+            $table->mediumInteger('client_total_hires')->nullable();
+            $table->mediumInteger('client_total_posted_jobs')->nullable();
+            $table->mediumInteger('client_total_reviews')->nullable();
+            $table->decimal('client_total_feedback')->nullable();
+            $table->mediumInteger('client_total_spent')->nullable();
+            $table->string('client_total_spent_currency')->nullable();
+            $table->string('location')->nullable();
+            $table->double('budget_minimum')->default(0);
+            $table->double('budget_maximum')->default(0);
+            $table->boolean('is_hourly')->default(0);
+            $table->boolean('is_payment_verified')->default(0);
             $table->json('json');
             $table->datetimes();
         });

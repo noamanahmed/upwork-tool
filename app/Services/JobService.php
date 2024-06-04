@@ -49,11 +49,34 @@ class JobService extends BaseService
                     $lock->release();
                     continue;
                 }
+                $isHourlyJob = ($node['job.contractTerms.contractType'] ?? null) === 'HOURLY' ? true : false;
+                $minimumBudget = 0;
+                $maximumBudget = 0;
+                if($isHourlyJob)
+                {
+                    $minimumBudget = $node['job.contractTerms.hourlyContractTerms.hourlyBudgetMin'] ?? 0;
+                    $maximumBudget = $node['job.contractTerms.hourlyContractTerms.hourlyBudgetMax'] ?? 0;
+                }else{
+                    $minimumBudget = $node['amount.displayValue'] ?? 0;
+                    $maximumBudget = $node['amount.displayValue'] ?? 0;
+                }
+                $location =  ($node['client.location.city'] ?? 'N/A') . ' '. ($node['client.location.state'] ?? 'N/A') . ' '. ($node['client.location.country'] ?? 'N/A');
                 $jobs[] = [
                     'upwork_id' => $node['id'],
                     'title' => $node['job.content.title'],
                     'ciphertext' => $node['ciphertext'],
                     'description' => $node['job.content.description'],
+                    'client_total_hires' => $node['client.totalHires'] ?? 0,
+                    'client_total_posted_jobs' => $node['client.totalPostedJobs'] ?? 0,
+                    'client_total_reviews' => $node['client.totalReviews'] ?? 0,
+                    'client_total_feedback' => $node['client.totalFeedback'] ?? 0,
+                    'client_total_spent' => (double)$node['client.totalSpent.rawValue'] ?? 0,
+                    'client_total_spent_currency' => $node['client.totalSpent.currency'] ?? 'USD',
+                    'location' => $location,
+                    'budget_minimum' => $minimumBudget,
+                    'budget_maximum' => $maximumBudget,
+                    'is_hourly' =>  $isHourlyJob,
+                    'is_payment_verified' => ( $node['client.verificationStatus'] ?? false) === 'VERIFIED',
                     'json' => json_encode($jobData),
                     'created_at' => now(),
                     'updated_at' => now(),
