@@ -40,11 +40,10 @@ class JobActivityService
             $lock = Cache::lock('job_activity_service_insert_job_activity_' . $node['id'], 10);
             if ($lock->get()) {
                 $job = $alreadyExistingJobs[$node['id']] ?? null;
-                if (is_null($job) || array_key_exists('latestActivity',$job)) {
+                if (is_null($job) || array_key_exists('latest_activity',$job)) {
                     $lock->release();
                     continue;
                 }
-
                 $jobActivities[] = [
                     'job_id' => $job['id'],
                     'schedule' => 0,

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\LanguageController;
 use App\Http\Controllers\Api\V1\UpWorkController;
 use App\Models\Job;
+use App\Models\JobActivity;
 use App\Models\JobSearch;
 use App\Models\Quotation;
 use App\Models\RssJobSearches;
@@ -139,6 +140,14 @@ Route::get('/upwork/debug/job-activity/{id}',function($id){
     $activities = app(UpWorkService::class)->jobActivity($job->toArray());
     app(JobActivityService::class)->updatejobActivities($job,$activities);
 });
+Route::get('/upwork/debug/job-activity/{id}/{schedule}',function($id,$schedule){
+    $job = Job::findOrfail($id);
+    $activtyAlreadyExists = JobActivity::where('job_id',$job->id)->where('schedule',$schedule)->count();
+    if($activtyAlreadyExists > 0) return;
+    $activities = app(UpWorkService::class)->jobActivity($job->toArray());
+    app(JobActivityService::class)->updatejobActivities($job,$activities,$schedule);
+});
+
 
 
 
