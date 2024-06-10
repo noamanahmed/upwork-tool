@@ -12,7 +12,7 @@ class JobActivity extends BaseModel
 
     public function dispatchSchedule()
     {
-        define('MINUTE_IN_SECONDS',60);
+        defined('MINUTE_IN_SECONDS') || define('MINUTE_IN_SECONDS',60);
         return [
             1 * MINUTE_IN_SECONDS,
             2 * MINUTE_IN_SECONDS,

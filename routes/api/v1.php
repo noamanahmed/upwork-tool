@@ -114,6 +114,7 @@ Route::get('/upwork/debug/{id}',function($id){
     $options =  $jobSearch->toArray();
     $cacheKey = 'upwork_jobs_'.$id;
     $jobs = Cache::get($cacheKey);
+
     // $jobs = app(UpWorkService::class)->jobs($options);
     // return $jobs;
 

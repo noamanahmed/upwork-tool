@@ -30,6 +30,7 @@ class JobActivityService
             $node = $jobData['node'];
             $jobIds[] = $node['id'];
         }
+
         $jobsWithNewlyCreatedActivity = [];
         $alreadyExistingJobsModels = Job::whereIn('upwork_id',$jobIds)->with(['latestActivity'])->get()->keyBy('upwork_id');
         $alreadyExistingJobs = $alreadyExistingJobsModels->toArray();
@@ -40,7 +41,8 @@ class JobActivityService
             $lock = Cache::lock('job_activity_service_insert_job_activity_' . $node['id'], 10);
             if ($lock->get()) {
                 $job = $alreadyExistingJobs[$node['id']] ?? null;
-                if (is_null($job) || array_key_exists('latest_activity',$job)) {
+
+                if (is_null($job) || ( array_key_exists('latest_activity',$job) && !empty($job['latest_activity']))) {
                     $lock->release();
                     continue;
                 }
@@ -66,7 +68,9 @@ class JobActivityService
                 $jobsWithNewlyCreatedActivity[] = $node['id'];
             }
         }
+
         $activityFetchingSchedule = (new JobActivity())->dispatchSchedule();
+
         foreach($jobsWithNewlyCreatedActivity as $newJob)
         {
             $job = $alreadyExistingJobsModels[$newJob];
