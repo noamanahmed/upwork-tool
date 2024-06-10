@@ -24,7 +24,7 @@ class JobActivity implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public Job $upworkJob)
+    public function __construct(public Job $upworkJob,public int $delayInSeconds)
     {
         //
     }
@@ -35,7 +35,7 @@ class JobActivity implements ShouldQueue
     public function handle(): void
     {
         $activities = app(UpWorkService::class)->jobActivity($this->upworkJob->toArray());
-        app(JobActivityService::class)->updatejobActivities($this->upworkJob,$activities);
+        app(JobActivityService::class)->updatejobActivities($this->upworkJob,$activities,$this->delayInSeconds);
         // Check if the lock exists
         if (Cache::has('job_activity_service_dispatch_update_job_activity'.$this->upworkJob->id)) {
             // Obtain the lock instance

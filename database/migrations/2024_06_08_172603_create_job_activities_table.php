@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('job_activities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('job_id')->constrained('jobs')->onDelete('cascade');
+            $table->string('schedule')->default('DEFAULT');
             $table->integer('total_applicants')->default(0);
             $table->double('average_rate_bid')->default(0);
             $table->double('minimum_rate_bid')->default(0);

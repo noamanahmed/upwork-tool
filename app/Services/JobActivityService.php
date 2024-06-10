@@ -47,6 +47,7 @@ class JobActivityService
 
                 $jobActivities[] = [
                     'job_id' => $job['id'],
+                    'schedule' => 'FIRST',
                     'total_applicants' => $node['totalApplicants'] ?? 0,
                     'average_rate_bid' => $node['job.activityStat.applicationsBidStats.avgRateBid.rawValue'] ?? 0,
                     'minimum_rate_bid' => $node['job.activityStat.applicationsBidStats.minRateBid.rawValue'] ?? 0,
@@ -72,7 +73,7 @@ class JobActivityService
             $job = $alreadyExistingJobsModels[$newJob];
             foreach($activityFetchingSchedule as $delayInSeconds)
             {
-                JobsJobActivity::dispatch($job)->delay($delayInSeconds);
+                JobsJobActivity::dispatch($job,$delayInSeconds)->delay($delayInSeconds);
             }
         }
 
@@ -85,7 +86,7 @@ class JobActivityService
             $lock->release();
         }
     }
-    public function updatejobActivities($job,$data)
+    public function updatejobActivities($job,$data,$schedule = 'DEFAULT')
     {
         $locks = [];
         $jobActivities = [];
@@ -110,6 +111,7 @@ class JobActivityService
                 }
                 $jobActivities[] = [
                     'job_id' => $job['id'],
+                    'schedule' => $schedule,
                     'total_applicants' => $node['totalApplicants'] ?? 0,
                     'average_rate_bid' => $node['job.activityStat.applicationsBidStats.avgRateBid.rawValue'] ?? 0,
                     'minimum_rate_bid' => $node['job.activityStat.applicationsBidStats.minRateBid.rawValue'] ?? 0,
