@@ -27,6 +27,7 @@ use App\Models\JobSearch;
 use App\Models\Quotation;
 use App\Models\RssJobSearches;
 use App\Services\CategoryService;
+use App\Services\JobActivityService;
 use App\Services\JobService;
 use App\Services\ThirdParty\SlackService;
 use App\Services\UpWorkService;
@@ -82,10 +83,11 @@ Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
 Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlackMessage']);
 
 
-// Route::get('/upwork/debug/slack',function(){
-//     $job= Job::latest()->first();
-//     app(SlackService::class)->sendNotification($job->slack_notification_message);
-// });
+Route::get('/upwork/debug/slack',function(){
+    $job= Job::latest()->inRandomOrder()->first();
+    $jobSearch = JobSearch::latest()->first();
+    app(SlackService::class)->setWebhookUrl($jobSearch->slack_webhook_url)->sendNotification($job->slack_notification_message);
+});
 Route::get('/upwork/debug/categories',function(){
     $categories= app(UpWorkService::class)->categories();
     app(CategoryService::class)->insertCategoriesFromApiResponse($categories);
@@ -125,12 +127,21 @@ Route::get('/upwork/debug/{id}',function($id){
     app(JobService::class)->insertJobsFromApiResponse($jobs);
     app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$jobSearch);
     app(CategoryService::class)->attachCategoriesToJobsFromApiResponse($jobs);
+    app(JobActivityService::class)->insertActivitiesFromApiResponse($jobs);
 });
 Route::get('/upwork/debug/rss/{id}',function($id){
     $rssJobSearch = RssJobSearches::findOrfail($id);
     $jobs = app(UpWorkService::class)->rssJobs($rssJobSearch);
     app(JobService::class)->insertRssJobs($jobs,$rssJobSearch);
 });
+Route::get('/upwork/debug/job-activity/{id}',function($id){
+    $job = Job::findOrfail($id);
+    $activities = app(UpWorkService::class)->jobActivity($job->toArray());
+    app(JobActivityService::class)->updatejobActivities($job,$activities);
+});
+
+
+
 Route::fallback(function(){
     abort(404);
 });

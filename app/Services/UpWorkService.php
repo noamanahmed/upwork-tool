@@ -53,6 +53,8 @@ class UpWorkService extends BaseService {
             \$marketPlaceJobFilter: MarketplaceJobFilter,
             \$searchType: MarketplaceJobPostingSearchType,
             \$sortAttributes: [MarketplaceJobPostingSearchSortAttribute]
+            \$sortAttribute : SortAttribute
+            \$jobPostingFilter : JobPostingsFilter!
           ) {
             marketplaceJobPostings(
               marketPlaceJobFilter: \$marketPlaceJobFilter,
@@ -115,12 +117,26 @@ class UpWorkService extends BaseService {
                       ownership {
                         team {
                           id
+                          rid
+                          legacyId
                           name
                           type
                           creationDate
+                          flag {
+                            client
+                            vendor
+                            agency
+                            individual
+                          }
                           active
                           legacyType
-
+                          photoUrl
+                          jobPosting(
+                            jobPostingFilter: \$jobPostingFilter
+                            sortAttribute: \$sortAttribute
+                          ) {
+                            totalCount
+                          }
                         }
                         company {
                             id
@@ -258,6 +274,15 @@ class UpWorkService extends BaseService {
                             displayValue
                           }
                         }
+                        jobActivity {
+                            lastClientActivity
+                            invitesSent
+                            totalInvitedToInterview
+                            totalHired
+                            totalUnansweredInvites
+                            totalOffered
+                            totalRecommended
+                        }
                       }
                       clientCompany {
                         id
@@ -349,9 +374,116 @@ class UpWorkService extends BaseService {
         {
             $params['variables']["marketPlaceJobFilter"]['locations_any'] = $options['location'];
         }
+        $params['variables']["jobPostingFilter"]["title_eq"] = $query;
 
 
         $response = $graphql->execute($params);
+        // dd($response);
+        if(property_exists($response,'message'))
+        {
+            $this->log('warning',$response->message,[
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            dd($response->message);
+            return [];
+        }
+        if(!property_exists($response,'data'))
+        {
+            $this->log('warning','API Request failed to fetch data',[
+                'reponse' => $response,
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
+
+        $data = $response->data;
+        $jobs = $data->marketplaceJobPostings->edges;
+        $data = [];
+        foreach($jobs as $job)
+        {
+            $node = $this->convertObjectToArray($job);
+            $data[] = $node;
+        }
+        return $data;
+    }
+    public function jobActivity($options = [])
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query marketplaceJobPostings(
+            \$marketPlaceJobFilter: MarketplaceJobFilter,
+            \$searchType: MarketplaceJobPostingSearchType,
+            \$sortAttributes: [MarketplaceJobPostingSearchSortAttribute]
+          ) {
+            marketplaceJobPostings(
+              marketPlaceJobFilter: \$marketPlaceJobFilter,
+              searchType: \$searchType,
+              sortAttributes: \$sortAttributes
+            ) {
+                edges {
+                  node {
+                    id
+                    totalApplicants
+                    job {
+                      id
+                      activityStat {
+                        applicationsBidStats {
+                          avgRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                          minRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                          maxRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                          avgInterviewedRateBid {
+                            rawValue
+                            currency
+                            displayValue
+                          }
+                        }
+                        jobActivity {
+                            lastClientActivity
+                            invitesSent
+                            totalInvitedToInterview
+                            totalHired
+                            totalUnansweredInvites
+                            totalOffered
+                            totalRecommended
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+        }
+        QUERY;
+        $query = 'laravel';
+
+        if(array_key_exists('title',$options))
+        {
+            $query = $options['title'];
+        }
+
+        $params['variables'] = [
+            "searchType" => "JOBS_FEED",
+        ];
+        $params['variables']["marketPlaceJobFilter"] = [];
+        $params['variables']["marketPlaceJobFilter"]["searchExpression_eq"] = $query;
+        $params['variables']["marketPlaceJobFilter"]["pagination_eq"] = [
+            "after" => "0",
+            "first" => 20
+        ];
+        $response = $graphql->execute($params);
+
         if(property_exists($response,'message'))
         {
             $this->log('warning',$response->message,[

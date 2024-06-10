@@ -15,26 +15,14 @@ class Job extends BaseModel
     function getSlackNotificationMessageAttribute()
     {
         $data = $this->getAdditonalData();
-
-        $clientId = $data['node.job.ownership.team.id'] ?? 'N/A';
         $clientName = $data['node.job.ownership.team.name'] ?? 'N/A';
-        $clientType = $data['node.job.ownership.team.type'] ?? 'N/A';
-        $clientBudget = $data['node.amount.rawValue'] ?? 'N/A';
-        $clientBudgetCurrency = $data['node.amount.currency'] ?? 'N/A';
-        $clientWeeklyBudget = $data['node.weeklyBudget.rawValue'] ?? 'N/A';
-        $clientWeeklyBudgetCurrency = $data['node.weeklyBudget.currency'] ?? 'N/A';
-        $clientHourlyBudgetMinimum = $data['node.hourlyBudgetMin.rawValue'] ?? 'N/A';
-        $clientHourlyBudgetMinimumCurrency = $data['node.hourlyBudgetMax.currency'] ?? 'N/A';
-        $clientHourlyBudgetMaximum = $data['node.hourlyBudgetMax.rawValue'] ?? 'N/A';
-        $clientHourlyBudgetMaximumCurrency = $data['node.hourlyBudgetMin.currency'] ?? 'N/A';
+        $budget = $this->budget_minimum.$this->getCurrencySymbol().' - ' . $this->budget_maximum.$this->getCurrencySymbol();
+        if($this->budget_minimum === $this->budget_maximum)
+        {
+            $budget = $this->budget_minimum.$this->getCurrencySymbol();
+        }
+        $jobType = $this->is_hourly ? 'HOURLY' : 'FIXED RATE';
         $projectTotalApplicants = $data['node.totalApplicants'] ?? 'N/A';
-        $averageRateBid = $data['node.job.activityStat.applicationsBidStats.avgRateBid.rawValue'] ?? 'N/A';
-        $averageRateCurrency = $data['node.job.activityStat.applicationsBidStats.avgRateBid.currency'] ?? 'N/A';
-        $maximumRateBid = $data['node.job.activityStat.applicationsBidStats.maxRateBid.rawValue'] ?? 'N/A';
-        $maximumRateCurrency = $data['node.job.activityStat.applicationsBidStats.maxRateBid.currency'] ?? 'N/A';
-        $minimumRateBid = $data['node.job.activityStat.applicationsBidStats.minRateBid.rawValue'] ?? 'N/A';
-        $minimumRateCurrency = $data['node.job.activityStat.applicationsBidStats.minRateBid.currency'] ?? 'N/A';
-        $engagement = $data['node.engagement'] ?? 'N/A';
         $clientTotalHires = $data['node.client.totalHires'] ?? 'N/A';
         $clientTotalSpend = $data['node.client.totalSpent.rawValue'] ?? 'N/A';
         $clientTotalSpendCurrency = $data['node.client.totalSpent.currency'] ?? 'N/A';
@@ -49,60 +37,35 @@ class Job extends BaseModel
         $text .= "\n";
         $text .= ' *Job Description* '.$job->description;
         $text .= "\n";
-        $text .= '*Client Id* : '.$clientId;
-        $text .= "\n";
         $text .= '*Client Name* : '.$clientName;
         $text .= "\n";
-        $text .= '*Client Budget* : '.$clientBudget;
+        $text .= '*Client Location* : '.$this->location;
         $text .= "\n";
-        $text .= '*Client BudgetCurrency* : '.$clientBudgetCurrency;
+        $text .= '*Job Type* : '.$jobType;
         $text .= "\n";
-        $text .= '*Client WeeklyBudget* : '.$clientWeeklyBudget;
+        $text .= '*Budget* : '.$budget;
         $text .= "\n";
-        $text .= '*Client WeeklyBudgetCurrency* : '.$clientWeeklyBudgetCurrency;
-        $text .= "\n";
-        $text .= '*Client Hourly Budget Minimum* :'. $clientHourlyBudgetMinimum;
-        $text .= "\n";
-        $text .= '*Client Hourly Budget Minimum Currency* :'. $clientHourlyBudgetMinimumCurrency;
-        $text .= "\n";
-        $text .= '*Client Hourly Budget Maximum* :'. $clientHourlyBudgetMaximum;
-        $text .= "\n";
-        $text .= '*Client Hourly Budget Maximum Currency* :'. $clientHourlyBudgetMaximumCurrency;
-        $text .= "\n";
-        $text .= '*Client Type* : '.$clientType;
-        $text .= "\n";
-        $text .= '*Average Rate Bid* : '.$averageRateBid;
-        $text .= "\n";
-        $text .= '*Average Rate Currency* : '.$averageRateCurrency;
-        $text .= "\n";
-        $text .= '*Maximum Rate Bid* : '.$maximumRateBid;
-        $text .= "\n";
-        $text .= '*Maximum Rate Currency* : '.$maximumRateCurrency;
-        $text .= "\n";
-        $text .= '*Minimum Rate Bid* : '.$minimumRateBid;
-        $text .= "\n";
-        $text .= '*Minimum Rate Currency* : '.$minimumRateCurrency;
-        $text .= "\n";
-        $text .= '*Engagement* : '.$engagement;
+        $text .= '*Job Type* : '.$jobType;
         $text .= "\n";
         $text .= '*Project TotalApplicants* : '.$projectTotalApplicants;
         $text .= "\n";
-        $text .= '*Client Total Hires* : '.$clientTotalHires;
         $text .= "\n";
-        $text .= '*Client Total Spend* : '.$clientTotalSpend;
         $text .= "\n";
-        $text .= '*Client Total Spend Currency* : '.$clientTotalSpendCurrency;
+        $text .= '*Client Details* : ';
         $text .= "\n";
-        $text .= '*Client Total Reviews* : '.$clientTotalReviews;
+        $text .= '*Total Hires* : '.$clientTotalHires;
         $text .= "\n";
-        $text .= '*Client Total Feedback* : '.$clientTotalFeedback;
+        $text .= '*Total Spend* : '.$clientTotalSpend;
         $text .= "\n";
-        $text .= '*Client Total Posted Jobs* : '.$clientTotalPostedJobs;
+        $text .= '*Total Spend Currency* : '.$clientTotalSpendCurrency;
+        $text .= "\n";
+        $text .= '*Total Reviews* : '.$clientTotalReviews;
+        $text .= "\n";
+        $text .= '*Total Feedback* : '.$clientTotalFeedback;
+        $text .= "\n";
+        $text .= '*Total Posted Jobs* : '.$clientTotalPostedJobs;
         $text .= "\n";
         $text .= '*Job Link*  :' .'https://www.upwork.com/jobs/'.$job->ciphertext;
-        $text .= "\n";
-        $text .= '*Job Link(Opens in App)*  :' .'upwork://www.upwork.com/jobs/'.$job->ciphertext;
-
         return $text;
     }
 
@@ -110,6 +73,11 @@ class Job extends BaseModel
     {
         if(empty($this->json)) return;
         return Arr::dot(json_decode($this->json,true));
+    }
+
+    function getCurrencySymbol()
+    {
+        return '$';
     }
     public function searches()
     {
@@ -122,5 +90,13 @@ class Job extends BaseModel
     public function skills()
     {
         return $this->belongsToMany(Skill::class,'job_skills');
+    }
+    public function latestActivity()
+    {
+        return $this->hasOne(JobActivity::class)->latest();
+    }
+    public function activities()
+    {
+        return $this->hasMany(JobActivity::class);
     }
 }
