@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\JobSearch as ModelsJobSearch;
 use App\Repositories\JobSearchRepository;
 use App\Services\CategoryService;
+use App\Services\JobActivityService;
 use App\Services\JobSearchService;
 use App\Services\JobService;
 use App\Services\UpWorkService;
@@ -38,6 +39,7 @@ class JobSearch implements ShouldQueue
         app(JobService::class)->insertJobsFromApiResponse($jobs);
         app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$this->jobSearch);
         app(CategoryService::class)->attachCategoriesToJobsFromApiResponse($jobs);
+        app(JobActivityService::class)->insertActivitiesFromApiResponse($jobs);
         // Check if the lock exists
         if (Cache::has('job_service_dispatch_job_'.$this->jobSearch->id)) {
             // Obtain the lock instance
