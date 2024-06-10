@@ -47,7 +47,7 @@ class JobActivityService
 
                 $jobActivities[] = [
                     'job_id' => $job['id'],
-                    'schedule' => 'FIRST',
+                    'schedule' => 0,
                     'total_applicants' => $node['totalApplicants'] ?? 0,
                     'average_rate_bid' => $node['job.activityStat.applicationsBidStats.avgRateBid.rawValue'] ?? 0,
                     'minimum_rate_bid' => $node['job.activityStat.applicationsBidStats.minRateBid.rawValue'] ?? 0,

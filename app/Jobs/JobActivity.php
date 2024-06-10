@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Job;
+use App\Models\JobActivity as ModelsJobActivity;
 use App\Repositories\JobSearchRepository;
 use App\Services\CategoryService;
 use App\Services\JobActivityService;
@@ -34,14 +35,13 @@ class JobActivity implements ShouldQueue
      */
     public function handle(): void
     {
+        $upworkJob = $this->upworkJob;
+        $lock = Cache::lock('job_activity_service_update_job_activity_' . $upworkJob->id. '_schedule_' . $this->delayInSeconds, 60);
+        if(!$lock->get()) return;
+        $activtyAlreadyExists = ModelsJobActivity::where('job_id',$upworkJob->id)->where('schedule',$this->delayInSeconds)->count();
+        if($activtyAlreadyExists > 0) return;
         $activities = app(UpWorkService::class)->jobActivity($this->upworkJob->toArray());
         app(JobActivityService::class)->updatejobActivities($this->upworkJob,$activities,$this->delayInSeconds);
-        // Check if the lock exists
-        if (Cache::has('job_activity_service_dispatch_update_job_activity'.$this->upworkJob->id)) {
-            // Obtain the lock instance
-            $lock = Cache::lock('job_activity_service_dispatch_update_job_activity'.$this->upworkJob->id);
-            // Release the lock
-            $lock->release();
-        }
+        $lock->release();
     }
 }
