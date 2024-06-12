@@ -47,9 +47,9 @@ class UpdateJobs extends Command
     public function fetchJobSearchSpecificAllReleventJobs(JobSearch $jobSearch)
     {
         $lastNDays = 30 * 12;
-        $maxRecords = 100;
+        $maxRecords = 10000;
         $start = 0;
-        $limit = 10;
+        $limit = 100;
         $jobs = [];
         while($start < $maxRecords)
         {
