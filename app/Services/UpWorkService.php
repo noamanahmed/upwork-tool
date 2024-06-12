@@ -325,7 +325,7 @@ class UpWorkService extends BaseService {
               }
         }
         QUERY;
-        $query = 'laravel';
+        $query = null;
 
         if(array_key_exists('q',$options))
         {
@@ -336,17 +336,21 @@ class UpWorkService extends BaseService {
             "searchType" => "JOBS_FEED",
         ];
         $params['variables']["marketPlaceJobFilter"] = [];
-        $params['variables']["marketPlaceJobFilter"]["searchExpression_eq"] = $query;
+        if(!empty($query))
+        {
+            $params['variables']["marketPlaceJobFilter"]["searchExpression_eq"] = $query;
+        }
+
         $params['variables']["marketPlaceJobFilter"]["pagination_eq"] = [
-            "after" => "0",
-            "first" => 20
+            "after" => $options['start'] ?? "0",
+            "first" => $options['limit'] ?? 20
         ];
 
         if($options['is_payment_verified'] ?? false)
         {
             $params['variables']["marketPlaceJobFilter"]['verifiedPaymentOnly_eq'] = true;
         }
-        if(!is_null($options['client_previous_hired_minimum']))
+        if(!is_null($options['client_previous_hired_minimum'] ?? null))
         {
             $params['variables']["marketPlaceJobFilter"]['clientHiresRange_eq']['rangeStart'] = (int) $options['client_previous_hired_minimum'];
         }
@@ -354,7 +358,7 @@ class UpWorkService extends BaseService {
         {
             $params['variables']["marketPlaceJobFilter"]['clientHiresRange_eq']['rangeEnd'] = (int) $options['client_previous_hired_maximum'];
         }
-        if(!is_null($options['feedback_minimum']))
+        if(!is_null($options['feedback_minimum'] ?? null))
         {
             $params['variables']["marketPlaceJobFilter"]['clientFeedBackRange_eq']['rangeStart'] = (float) $options['feedback_minimum'];
         }
@@ -363,7 +367,7 @@ class UpWorkService extends BaseService {
             $params['variables']["marketPlaceJobFilter"]['clientFeedBackRange_eq']['rangeEnd'] = (float) $options['feedback_maximum'];
         }
 
-        if(!is_null($options['proposals_minimum']))
+        if(!is_null($options['proposals_minimum'] ?? null))
         {
             $params['variables']["marketPlaceJobFilter"]['proposalRange_eq']['rangeStart'] = (int) $options['proposals_minimum'];
         }
@@ -375,8 +379,12 @@ class UpWorkService extends BaseService {
         {
             $params['variables']["marketPlaceJobFilter"]['locations_any'] = $options['location'];
         }
-        $params['variables']["jobPostingFilter"]["title_eq"] = $query;
+        if(!empty($options['days_posted'] ?? null))
+        {
+            $params['variables']["marketPlaceJobFilter"]['daysPosted_eq'] = $options['days_posted'];
+        }
 
+        $params['variables']["jobPostingFilter"]["title_eq"] = $query;
 
         $response = $graphql->execute($params);
         // dd($response);

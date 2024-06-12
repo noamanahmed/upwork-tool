@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('duration')->default('N/A');
             $table->double('bid')->default(0);
             $table->string('currency')->default('N/A');
+            $table->string('job_title')->default('N/A');
             $table->integer('status')->default(ProposalStatusEnum::ACCEPTED);
             $table->datetimes();
         });
