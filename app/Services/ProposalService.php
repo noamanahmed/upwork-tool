@@ -55,7 +55,7 @@ class ProposalService
             if ($lock->get()) {
                 $job = $alreadyExistingJobs[$upworkJobId] ?? null;
                 if (!is_null($job)) {
-                    $jobId = $job->id;
+                    $jobId = $job['id'];
                 }
                 $proposals[] = [
                     'proposal_id' => $node['id'],
