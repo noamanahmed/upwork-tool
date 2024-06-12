@@ -30,6 +30,7 @@ use App\Models\RssJobSearches;
 use App\Services\CategoryService;
 use App\Services\JobActivityService;
 use App\Services\JobService;
+use App\Services\ProposalService;
 use App\Services\ThirdParty\SlackService;
 use App\Services\UpWorkService;
 use Illuminate\Http\Request;
@@ -82,6 +83,7 @@ Route::get('/upwork/regions',[UpWorkController::class,'regions']);
 Route::get('/upwork/analytics',[UpWorkController::class,'analytics']);
 Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
 Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlackMessage']);
+Route::get('/upwork/proposals',[UpWorkController::class,'proposals']);
 
 
 Route::get('/upwork/debug/slack',function(){
@@ -109,7 +111,7 @@ Route::get('/upwork/debug/skills',function(){
     app(CategoryService::class)->insertSkillsFromApiResponse($skills);
 });
 
-Route::get('/upwork/debug/{id}',function($id){
+Route::get('/upwork/debug/job-search/{id}',function($id){
     $jobSearch = JobSearch::findOrfail($id);
     $options =  $jobSearch->toArray();
     $cacheKey = 'upwork_jobs_'.$id;
@@ -148,7 +150,10 @@ Route::get('/upwork/debug/job-activity/{id}/{schedule}',function($id,$schedule){
     $activities = app(UpWorkService::class)->jobActivity($job->toArray());
     app(JobActivityService::class)->updatejobActivities($job,$activities,$schedule);
 });
-
+Route::get('/upwork/debug/proposals',function(){
+    $proposals = app(UpWorkService::class)->proposals();
+    app(ProposalService::class)->insertProposalsFromApiResponse($proposals);
+});
 
 
 

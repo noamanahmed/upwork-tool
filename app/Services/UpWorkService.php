@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Enums\ProposalStatusEnum;
 use App\Models\Job;
 use App\Models\Setting;
 use App\Services\ThirdParty\RssService;
@@ -384,7 +385,6 @@ class UpWorkService extends BaseService {
             $this->log('warning',$response->message,[
                 'client' => (array) $client->getServer()->getInstance()
             ]);
-            dd($response->message);
             return [];
         }
         if(!property_exists($response,'data'))
@@ -867,8 +867,272 @@ class UpWorkService extends BaseService {
                 ->select(DB::raw('job_searches.name as job_search_name'), DB::raw('COUNT(*) as entry_count'))
                 ->get();
         }
-        // dd($response);
         return $this->apiResponse($response,200);
+    }
+    public function proposals($status = 'Accepted')
+    {
+        $proposalTypes = ProposalStatusEnum::toArray();
+        $proposals = [];
+        foreach($proposalTypes as $proposalType)
+        {
+            $proposals = [...$proposals,...$this->proposalsByType(ucfirst(strtolower($proposalType->name)))];
+        }
+        // dd($proposals);
+        return $proposals;
+    }
+    public function proposalsByType($status = 'Accepted')
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query vendorProposals(
+            \$filter: VendorProposalFilter!,
+            \$sortAttribute: VendorProposalSortAttribute!,
+            \$pagination: Pagination!
+          ) {
+            vendorProposals(
+              filter: \$filter,
+              sortAttribute: \$sortAttribute,
+              pagination: \$pagination
+            ) {
+              totalCount
+              pageInfo {
+                endCursor
+                hasNextPage
+              }
+              edges {
+                node {
+                  id
+                  proposalCoverLetter
+                  status {
+                    status
+                  }
+                  terms {
+                    chargeRate {
+                      rawValue
+                      displayValue
+                      currency
+                    }
+                    estimatedDuration {
+                      label
+                    }
+                  }
+                  marketplaceJobPosting {
+                    id
+                    workFlowState {
+                      status
+                      closeResult
+                    }
+                    ownership {
+                      team {
+                        id
+                        rid
+                        legacyId
+                        name
+                        type
+                        creationDate
+                        flag {
+                          client
+                          vendor
+                          agency
+                          individual
+                        }
+                        active
+                        legacyType
+                        photoUrl
+                      }
+                      company {
+                          id
+                          name
+                          type
+                          creationDate
+                          active
+                          legacyType
+                        }
+                    }
+                    content {
+                      title
+                      description
+                    }
+                    contractTerms{
+                      contractType
+                      onSiteType
+                      personsToHire
+                      experienceLevel
+                      fixedPriceContractTerms {
+                          amount {
+                              rawValue
+                              currency
+                              displayValue
+                          }
+                          maxAmount {
+                              rawValue
+                              currency
+                              displayValue
+                          }
+                          engagementDuration {
+                              label
+                              weeks
+                          }
+                      }
+                      hourlyContractTerms {
+                          engagementDuration {
+                              label
+                              weeks
+                          }
+                          engagementType
+                          hourlyBudgetMin
+                          hourlyBudgetMax
+                      }
+                    }
+                    contractorSelection {
+                      proposalRequirement {
+                        coverLetterRequired
+                        freelancerMilestonesAllowed
+                        screeningQuestions {
+                          sequenceNumber
+                          question
+                        }
+                      }
+                    }
+                    attachments {
+                      sequenceNumber
+                      id
+                      fileName
+                      fileSize
+
+                    }
+                    classification {
+                      category {
+                        id
+                        ontologyId
+                        definition
+                        preferredLabel
+                        type
+                      }
+                      subCategory {
+                        id
+                        ontologyId
+                        definition
+                        preferredLabel
+                        type
+                      }
+                      skills {
+                        id
+                        ontologyId
+                        definition
+                        preferredLabel
+                        type
+                      }
+                      additionalSkills {
+                        id
+                        ontologyId
+                        definition
+                        preferredLabel
+                        type
+                      }
+                    }
+                    segmentationData {
+                      segmentationValues {
+                        segmentationInfo {
+                          sortOrder
+                          id
+                          label
+                          referenceName
+                          skill {
+                            id
+                            ontologyId
+                            definition
+                            preferredLabel
+                            type
+                          }
+                          segmentationType {
+                            id
+                            name
+                            referenceName
+                          }
+                        }
+                      }
+                    }
+                    activityStat {
+                      applicationsBidStats {
+                        avgRateBid {
+                          rawValue
+                          currency
+                          displayValue
+                        }
+                        minRateBid {
+                          rawValue
+                          currency
+                          displayValue
+                        }
+                        maxRateBid {
+                          rawValue
+                          currency
+                          displayValue
+                        }
+                        avgInterviewedRateBid {
+                          rawValue
+                          currency
+                          displayValue
+                        }
+                      }
+                      jobActivity {
+                          lastClientActivity
+                          invitesSent
+                          totalInvitedToInterview
+                          totalHired
+                          totalUnansweredInvites
+                          totalOffered
+                          totalRecommended
+                      }
+                    }
+                    clientCompany {
+                      id
+                    }
+                    clientCompanyPublic{
+                      id
+                    }
+                  }
+
+                }
+              }
+            }
+          }
+        QUERY;
+        $params['variables']['filter']['status_eq'] = $status;
+        $params['variables']['sortAttribute']['field'] = 'CREATEDDATETIME';
+        $params['variables']['sortAttribute']['sortOrder'] = 'DESC';
+        $params['variables']['pagination']['first'] = 40;
+
+        $response = $graphql->execute($params);
+
+        if(property_exists($response,'message'))
+        {
+            $this->log('warning',$response->message,[
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
+        if(!property_exists($response,'data'))
+        {
+            $this->log('warning','API Request failed to fetch data',[
+                'reponse' => $response,
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
+
+        $data = $response->data;
+        $proposals = $data->vendorProposals->edges;
+        $data = [];
+        foreach($proposals as $proposal)
+        {
+            $node = $this->convertObjectToArray($proposal);
+            $node['type'] = $status;
+            $data[] = $node;
+        }
+        return $data;
     }
     public function log($type,$data,$contenxt = [])
     {

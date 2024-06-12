@@ -75,4 +75,8 @@ class UpWorkController extends BaseController
     {
         return $this->upworkService->analytics();
     }
+    public function proposals(Request $request)
+    {
+        return $this->upworkService->proposals();
+    }
 }
