@@ -151,7 +151,13 @@ Route::get('/upwork/debug/job-activity/{id}/{schedule}',function($id,$schedule){
     app(JobActivityService::class)->updatejobActivities($job,$activities,$schedule);
 });
 Route::get('/upwork/debug/proposals',function(){
-    $proposals = app(UpWorkService::class)->proposals();
+    $cacheKey = 'upwork_proposals';
+    $proposals = Cache::get($cacheKey);
+    if(is_null($proposals))
+    {
+        $proposals = app(UpWorkService::class)->proposals();
+        Cache::set($cacheKey,$proposals,3600);
+    }
     app(ProposalService::class)->insertProposalsFromApiResponse($proposals);
 });
 

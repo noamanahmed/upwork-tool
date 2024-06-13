@@ -176,4 +176,85 @@ class JobService extends BaseService
             $lock->release();
         }
     }
+    public function insertJobsRelevantToProposals($proposals,$jobContents)
+    {
+        $locks = [];
+        $jobs = [];
+        $jobIds = [];
+        $cipherTextArray = [];
+        foreach ($proposals as $proposalData) {
+            if (empty($proposalData)) continue;
+            if($proposalData['node']['marketplaceJobPosting']['id'] ?? false)
+            {
+                $jobIds[] = $proposalData['node']['marketplaceJobPosting']['id'];
+            }
+
+        }
+        foreach($jobContents  as $jobContent)
+        {
+            $cipherTextArray[$jobContent['id']] = $jobContent['ciphertext'];
+        }
+
+        $alreadyExistingJobs = Job::whereIn('upwork_id',$jobIds)->get()->keyBy('upwork_id')->toArray();
+        foreach ($proposals as $proposalData) {
+            $jobData = $proposalData['node']['marketplaceJobPosting'] ?? false;
+            if (empty($jobData)) continue;
+            $cipherText = $cipherTextArray[$jobData['id']] ?? false;
+            $node = $jobData;
+            $node = Arr::dot($node);
+            $lock = Cache::lock('job_service_insert_job_' . $node['id'], 10);
+            if ($lock->get()) {
+                $job = $alreadyExistingJobs[$node['id']] ?? null;
+                if (!is_null($job)) {
+                    $lock->release();
+                    continue;
+                }
+                $isHourlyJob = ($node['contractTerms.contractType'] ?? null) === 'HOURLY' ? true : false;
+                $minimumBudget = 0;
+                $maximumBudget = 0;
+                if($isHourlyJob)
+                {
+                    $minimumBudget = $node['contractTerms.hourlyContractTerms.hourlyBudgetMin'] ?? 0;
+                    $maximumBudget = $node['contractTerms.hourlyContractTerms.hourlyBudgetMax'] ?? 0;
+                }else{
+                    $minimumBudget = $node['amount.displayValue'] ?? 0;
+                    $maximumBudget = $node['amount.displayValue'] ?? 0;
+                }
+                $location =  ($node['client.location.city'] ?? 'N/A') . ' '. ($node['client.location.state'] ?? 'N/A') . ' '. ($node['client.location.country'] ?? 'N/A');
+                $jobs[] = [
+                    'upwork_id' => $node['id'],
+                    'title' => $node['content.title'],
+                    'ciphertext' => $cipherText,
+                    'description' => $node['content.description'],
+                    'client_total_hires' => $node['client.totalHires'] ?? 0,
+                    'client_total_posted_jobs' => $node['client.totalPostedJobs'] ?? 0,
+                    'client_total_reviews' => $node['client.totalReviews'] ?? 0,
+                    'client_total_feedback' => $node['client.totalFeedback'] ?? 0,
+                    'client_total_spent' => (double) $node['client.totalSpent.rawValue'] ?? 0,
+                    'client_total_spent_currency' => $node['client.totalSpent.currency'] ?? 'USD',
+                    'location' => $location,
+                    'budget_minimum' => $minimumBudget,
+                    'budget_maximum' => $maximumBudget,
+                    'is_hourly' =>  $isHourlyJob,
+                    'is_payment_verified' => ( $node['client.verificationStatus'] ?? false) === 'VERIFIED',
+                    'city' => $node['client.location.city'] ?? 'N/A',
+                    'state' => $node['client.location.state'] ?? 'N/A',
+                    'country' => $node['client.location.country'] ?? 'N/A',
+                    'json' => json_encode($jobData),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                $locks[] = $lock;
+            }
+        }
+        dd($jobs);
+        if(!empty($jobs))
+        {
+            Job::insert($jobs);
+        }
+        foreach($locks as $lock)
+        {
+            $lock->release();
+        }
+    }
 }

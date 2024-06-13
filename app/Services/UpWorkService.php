@@ -341,6 +341,11 @@ class UpWorkService extends BaseService {
             $params['variables']["marketPlaceJobFilter"]["searchExpression_eq"] = $query;
         }
 
+        if(!empty($options['title'] ?? null))
+        {
+            $params['variables']["marketPlaceJobFilter"]["titleExpression_eq"] = $options['title'];
+        }
+
         $params['variables']["marketPlaceJobFilter"]["pagination_eq"] = [
             "after" => $options['start'] ?? "0",
             "first" => $options['limit'] ?? 20
@@ -510,6 +515,48 @@ class UpWorkService extends BaseService {
 
         $data = $response->data;
         $jobs = $data->marketplaceJobPostings->edges;
+        $data = [];
+        foreach($jobs as $job)
+        {
+            $node = $this->convertObjectToArray($job);
+            $data[] = $node;
+        }
+        return $data;
+    }
+    public function jobContents($ids = [])
+    {
+        $client = $this->getUpworkClient();
+        $graphql = new \Upwork\API\Routers\Graphql($client);
+        $params['query'] = <<<QUERY
+        query marketplaceJobPostingsContents(\$ids: [ID!]!) {
+            marketplaceJobPostingsContents(ids: \$ids) {
+              id
+              ciphertext
+            }
+        }
+        QUERY;
+        $query = 'laravel';
+
+        $params['variables']['ids'] = $ids;
+        $response = $graphql->execute($params);
+        if(property_exists($response,'message'))
+        {
+            $this->log('warning',$response->message,[
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
+        if(!property_exists($response,'data'))
+        {
+            $this->log('warning','API Request failed to fetch data',[
+                'reponse' => $response,
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
+
+        $data = $response->data;
+        $jobs = $data->marketplaceJobPostingsContents;
         $data = [];
         foreach($jobs as $job)
         {
