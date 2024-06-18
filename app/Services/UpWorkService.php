@@ -522,6 +522,14 @@ class UpWorkService extends BaseService {
         }
 
         $data = $response->data;
+        if(!property_exists($data,'marketplaceJobPostings'))
+        {
+            $this->log('warning','API Request failed to parse data from response',[
+                'data' => $data,
+                'client' => (array) $client->getServer()->getInstance()
+            ]);
+            return [];
+        }
         $jobs = $data->marketplaceJobPostings->edges;
         $data = [];
         foreach($jobs as $job)
