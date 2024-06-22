@@ -11,6 +11,7 @@ use App\Repositories\JobRepository;
 use App\Transformers\JobCollectionTransformer;
 use App\Transformers\JobTransformer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
@@ -61,6 +62,7 @@ class JobService extends BaseService
                     $maximumBudget = $node['amount.displayValue'] ?? 0;
                 }
                 $location =  ($node['client.location.city'] ?? 'N/A') . ' '. ($node['client.location.state'] ?? 'N/A') . ' '. ($node['client.location.country'] ?? 'N/A');
+
                 $jobs[] = [
                     'upwork_id' => $node['id'],
                     'title' => $node['job.content.title'],
@@ -80,6 +82,7 @@ class JobService extends BaseService
                     'city' => $node['client.location.city'] ?? 'N/A',
                     'state' => $node['client.location.state'] ?? 'N/A',
                     'country' => $node['client.location.country'] ?? 'N/A',
+                    'posted_at' => Carbon::parse($node['publishedDateTime'] ?? '1970-01-01 00:00:01'),
                     'json' => json_encode($jobData),
                     'created_at' => now(),
                     'updated_at' => now(),
