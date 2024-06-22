@@ -83,6 +83,7 @@ class JobService extends BaseService
                     'state' => $node['client.location.state'] ?? 'N/A',
                     'country' => $node['client.location.country'] ?? 'N/A',
                     'posted_at' => Carbon::parse($node['publishedDateTime'] ?? '1970-01-01 00:00:01'),
+                    'is_activity_job_dispatched' => 0,
                     'json' => json_encode($jobData),
                     'created_at' => now(),
                     'updated_at' => now(),

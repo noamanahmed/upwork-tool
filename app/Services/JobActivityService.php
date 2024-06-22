@@ -42,7 +42,7 @@ class JobActivityService
             if ($lock->get()) {
                 $job = $alreadyExistingJobs[$node['id']] ?? null;
 
-                if (is_null($job) || ( array_key_exists('latest_activity',$job) && !empty($job['latest_activity']))) {
+                if (is_null($job) || $job['is_activity_job_dispatched']) {
                     $lock->release();
                     continue;
                 }
@@ -78,6 +78,8 @@ class JobActivityService
             {
                 JobsJobActivity::dispatch($job,$delayInSeconds)->delay($delayInSeconds);
             }
+            $job->is_activity_job_dispatched = 1;
+            $job->save();
         }
 
         if(!empty($jobActivities))
