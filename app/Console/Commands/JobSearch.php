@@ -39,10 +39,8 @@ class JobSearch extends Command
             if ($lock->get()) {
                 $this->line('Acquired JOB Lock for Search ID:'.$search->id);
                 JobsJobSearch::dispatch($search);
-                Log::warning('Acquired JOB Lock for Search ID:'.$search->id);
             }else{
                 $this->line('Cannot Acquire JOB Lock for Search ID:'.$search->id);
-                Log::warning('Cannot Acquire JOB Lock for Search ID:'.$search->id);
             }
         }
     }
