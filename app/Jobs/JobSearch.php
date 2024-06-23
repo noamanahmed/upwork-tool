@@ -43,7 +43,7 @@ class JobSearch implements ShouldQueue
             $lock = Cache::lock('job_service_dispatch_job_'.$this->jobSearch->id,30);
             // Release the lock
             $lock->release();
-            Log::warning("Removing Lock!");
+            Log::warning("Removing Lock for $this->jobSearch->id");
         }
         app(JobService::class)->insertJobsFromApiResponse($jobs);
         app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$this->jobSearch);
