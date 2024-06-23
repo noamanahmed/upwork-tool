@@ -6,6 +6,7 @@ use App\Jobs\JobSearch as JobsJobSearch;
 use App\Models\JobSearch as ModelsJobSearch;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class JobSearch extends Command
 {
@@ -40,6 +41,7 @@ class JobSearch extends Command
                 JobsJobSearch::dispatch($search);
             }else{
                 $this->line('Cannot Acquire JOB Lock for Search ID:'.$search->id);
+                Log::warning('Cannot Acquire JOB Lock for Search ID:'.$search->id);
             }
         }
     }
