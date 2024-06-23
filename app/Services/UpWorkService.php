@@ -400,7 +400,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data'))
+        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
@@ -512,7 +512,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data'))
+        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
@@ -562,7 +562,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data'))
+        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
@@ -1185,7 +1185,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data'))
+        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
