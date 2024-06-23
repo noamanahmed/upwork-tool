@@ -54,8 +54,6 @@ class UpWorkService extends BaseService {
             \$marketPlaceJobFilter: MarketplaceJobFilter,
             \$searchType: MarketplaceJobPostingSearchType,
             \$sortAttributes: [MarketplaceJobPostingSearchSortAttribute]
-            \$sortAttribute : SortAttribute
-            \$jobPostingFilter : JobPostingsFilter!
           ) {
             marketplaceJobPostings(
               marketPlaceJobFilter: \$marketPlaceJobFilter,
@@ -132,21 +130,7 @@ class UpWorkService extends BaseService {
                           active
                           legacyType
                           photoUrl
-                          jobPosting(
-                            jobPostingFilter: \$jobPostingFilter
-                            sortAttribute: \$sortAttribute
-                          ) {
-                            totalCount
-                          }
                         }
-                        company {
-                            id
-                            name
-                            type
-                            creationDate
-                            active
-                            legacyType
-                          }
                       }
                       content {
                         title
@@ -389,8 +373,6 @@ class UpWorkService extends BaseService {
             $params['variables']["marketPlaceJobFilter"]['daysPosted_eq'] = $options['days_posted'];
         }
 
-        $params['variables']["jobPostingFilter"]["title_eq"] = $query;
-
         $response = $graphql->execute($params);
         // dd($response);
         if(property_exists($response,'message'))
@@ -400,7 +382,8 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
+
+        if(!property_exists($response,'data') || is_null($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
@@ -512,7 +495,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
+        if(!property_exists($response,'data') || is_null($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
@@ -562,7 +545,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
+        if(!property_exists($response,'data') || is_null($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
@@ -1012,14 +995,6 @@ class UpWorkService extends BaseService {
                         legacyType
                         photoUrl
                       }
-                      company {
-                          id
-                          name
-                          type
-                          creationDate
-                          active
-                          legacyType
-                        }
                     }
                     content {
                       title
@@ -1158,9 +1133,6 @@ class UpWorkService extends BaseService {
                           totalRecommended
                       }
                     }
-                    clientCompany {
-                      id
-                    }
                     clientCompanyPublic{
                       id
                     }
@@ -1185,7 +1157,7 @@ class UpWorkService extends BaseService {
             ]);
             return [];
         }
-        if(!property_exists($response,'data') || property_exists($response,'errors') || !empty($response->data))
+        if(!property_exists($response,'data') || is_null($response->data))
         {
             $this->log('warning','API Request failed to fetch data',[
                 'reponse' => $response,
