@@ -36,13 +36,8 @@ class JobSearch implements ShouldQueue
     {
         $options =  $this->jobSearch->toArray();
         $jobs = app(UpWorkService::class)->jobs($options);
-        // Check if the lock exists
-        if (Cache::has('job_service_dispatch_job_'.$this->jobSearch->id)) {
-            // Obtain the lock instance
-            $lock = Cache::lock('job_service_dispatch_job_'.$this->jobSearch->id);
-            // Release the lock
-            $lock->release();
-        }
+        $lock = Cache::lock('job_service_dispatch_job_'.$this->jobSearch->id);
+        $lock->release();
         app(JobService::class)->insertJobsFromApiResponse($jobs);
         app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$this->jobSearch);
         app(CategoryService::class)->attachCategoriesToJobsFromApiResponse($jobs);
