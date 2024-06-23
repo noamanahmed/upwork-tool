@@ -44,4 +44,13 @@ class JobActivity implements ShouldQueue
         app(JobActivityService::class)->updatejobActivities($this->upworkJob,$activities,$this->delayInSeconds);
         $lock->release();
     }
+    /**
+     * Get the tags that should be assigned to the job.
+     *
+     * @return array
+    */
+    public function tags()
+    {
+        return ['job_activity', 'job:'.$this->upworkJob->id,'schedule:'.$this->delayInSeconds,'job:'.$this->upworkJob->id.'_schedule:'.$this->delayInSeconds];
+    }
 }

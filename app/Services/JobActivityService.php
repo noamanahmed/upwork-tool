@@ -38,7 +38,7 @@ class JobActivityService
             if (empty($jobData)) continue;
             $node = $jobData['node'];
             $node = Arr::dot($node);
-            $lock = Cache::lock('job_activity_service_insert_job_activity_' . $node['id'], 10);
+            $lock = Cache::lock('job_activity_service_insert_job_activity_' . $node['id'], 120);
             if ($lock->get()) {
                 $job = $alreadyExistingJobs[$node['id']] ?? null;
 
