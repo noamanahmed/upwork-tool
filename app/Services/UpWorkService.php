@@ -393,7 +393,7 @@ class UpWorkService extends BaseService {
         }
 
         $data = $response->data;
-        if(!property_exists($data,'marketplaceJobPostings'))
+        if(!property_exists($data,'marketplaceJobPostings') || is_null($data->marketplaceJobPostings))
         {
             $this->log('warning','API Request failed to parse data from response',[
                 'data' => $data,
@@ -505,7 +505,7 @@ class UpWorkService extends BaseService {
         }
 
         $data = $response->data;
-        if(!property_exists($data,'marketplaceJobPostings'))
+        if(!property_exists($data,'marketplaceJobPostings') || is_null($data->marketplaceJobPostings))
         {
             $this->log('warning','API Request failed to parse data from response',[
                 'data' => $data,
