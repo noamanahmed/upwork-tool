@@ -35,7 +35,7 @@ class CategoriesAndSkills extends Command
         $start = 0;
         $offset = 100;
         $skills = [];
-        while($start < $maxRecords)
+        while($start <= $maxRecords)
         {
             $this->line('Fetching Skills from '.$start);
             $cacheKey = 'upwork_skills_offset_'.$offset.'_start_'.$start;

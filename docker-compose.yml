@@ -83,7 +83,7 @@ services:
             ADMINER_DESIGN: pepa-linha
             ADMINER_DEFAULT_SERVER: mysql
             ADMINER_USERNAME: root
-            ADMINER_PASSWORD: nevron
+            ADMINER_PASSWORD: upwork-tool
             ADMINER_AUTOLOGIN: 1
         networks:
             - sail
