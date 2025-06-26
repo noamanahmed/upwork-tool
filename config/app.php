@@ -192,4 +192,11 @@ return [
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 
+
+    'upwork_cron' => [
+        'start_time' => env('UPWORK_CRON_START', '21:00'),
+        'end_time' => env('UPWORK_CRON_END', '03:00'),
+        'days' => explode(',', env('UPWORK_CRON_DAYS', 'mon,tue,wed,thu,fri')),
+    ],
+
 ];
