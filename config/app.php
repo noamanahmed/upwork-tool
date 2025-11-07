@@ -194,6 +194,7 @@ return [
 
 
     'upwork_cron' => [
+        'enabled' => env('UPWORK_CRON_ENABLED', true),
         'start_time' => env('UPWORK_CRON_START', '21:00'),
         'end_time' => env('UPWORK_CRON_END', '03:00'),
         'days' => explode(',', env('UPWORK_CRON_DAYS', 'mon,tue,wed,thu,fri')),

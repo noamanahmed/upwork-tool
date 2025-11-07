@@ -39,6 +39,12 @@ class Kernel extends ConsoleKernel
 
     protected function shouldRunUpworkTasks(): bool
     {
+        $isAllowed = config('app.upwork_cron.enabled', true);
+        if( !$isAllowed)
+        {
+            return false;
+        }
+
         $timezone = 'Asia/Karachi'; // Pakistan time
 
         $now = Carbon::now($timezone);
