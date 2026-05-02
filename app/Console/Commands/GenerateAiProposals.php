@@ -56,6 +56,11 @@ class GenerateAiProposals extends Command
                 'proposal' => 'N/A',
             ]);
 
+            $aiJobProposal = $aiJobProposal->fresh(); // Refresh to get any default values or changes from the model
+            $aiJobProposal->prompt = $aiJobProposal->getPromptText();
+            $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
+            $aiJobProposal->save();
+
             dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
             $this->info("Dispatched proposal generation for Upwork job #{$job->id}.");
             $dispatchedCount++;
