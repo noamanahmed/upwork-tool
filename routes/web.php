@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
+Route::get('/job/{jobId}/proposal', function ($jobId) {
+    $job = \App\Models\Job::findOrFail($jobId);
+    return view('job-proposal', compact('job'));
+})->name('job.proposal');

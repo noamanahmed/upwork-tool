@@ -65,6 +65,9 @@ class Job extends BaseModel
         $text .= '*Total Posted Jobs* : ' . $clientTotalPostedJobs;
         $text .= "\n";
         $text .= '*Job Link*  :' . 'https://www.upwork.com/jobs/' . $job->ciphertext;
+        $text .= "\n";
+        $text .= '*Proposal Link*  :' . route('job.proposal', ['jobId' => $job->id]);
+        $text .= "\n";
         return $text;
     }
 
