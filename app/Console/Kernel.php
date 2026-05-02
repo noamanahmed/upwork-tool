@@ -22,9 +22,12 @@ class Kernel extends ConsoleKernel
             // $schedule->command('upwork:send-rss-slack-notifications')->everyFiveSeconds();
 
             $schedule->command('upwork:proposals')->everyFifteenMinutes();
+
+            $schedule->command('upwork:generate-ai-proposals')->everyMinute();
         }
         $schedule->command('upwork:prune-telescope')->everyFifteenMinutes();
         $schedule->command('telescope:prune --hours=96')->everyThreeHours();
+
     }
 
     /**

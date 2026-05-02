@@ -35,6 +35,7 @@ return [
     ],
     'ai' => [
         'provider' => env('AI_PROVIDER', 'openai'),
+        'rate_limit' => env('AI_RATE_LIMIT', 5),
         'openai' => [
             'key' => env('OPENAI_API_KEY'),
             'model' => env('OPENAI_MODEL', 'gpt-4'),

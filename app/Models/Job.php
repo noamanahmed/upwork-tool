@@ -16,10 +16,9 @@ class Job extends BaseModel
     {
         $data = $this->getAdditonalData();
         $clientName = $data['node.job.ownership.team.name'] ?? 'N/A';
-        $budget = $this->budget_minimum.$this->getCurrencySymbol().' - ' . $this->budget_maximum.$this->getCurrencySymbol();
-        if($this->budget_minimum === $this->budget_maximum)
-        {
-            $budget = $this->budget_minimum.$this->getCurrencySymbol();
+        $budget = $this->budget_minimum . $this->getCurrencySymbol() . ' - ' . $this->budget_maximum . $this->getCurrencySymbol();
+        if ($this->budget_minimum === $this->budget_maximum) {
+            $budget = $this->budget_minimum . $this->getCurrencySymbol();
         }
         $jobType = $this->is_hourly ? 'HOURLY' : 'FIXED RATE';
         $projectTotalApplicants = $data['node.totalApplicants'] ?? 'N/A';
@@ -33,46 +32,47 @@ class Job extends BaseModel
         $text = '';
         $text .= '<!channel>';
         $text .= "\n";
-        $text .= ' *Job Title* '.$job->title;
+        $text .= ' *Job Title* ' . $job->title;
         $text .= "\n";
-        $text .= ' *Job Description* '.$job->description;
+        $text .= ' *Job Description* ' . $job->description;
         $text .= "\n";
-        $text .= '*Client Name* : '.$clientName;
+        $text .= '*Client Name* : ' . $clientName;
         $text .= "\n";
-        $text .= '*Client Location* : '.$this->location;
+        $text .= '*Client Location* : ' . $this->location;
         $text .= "\n";
-        $text .= '*Job Type* : '.$jobType;
+        $text .= '*Job Type* : ' . $jobType;
         $text .= "\n";
-        $text .= '*Budget* : '.$budget;
+        $text .= '*Budget* : ' . $budget;
         $text .= "\n";
-        $text .= '*Job Type* : '.$jobType;
+        $text .= '*Job Type* : ' . $jobType;
         $text .= "\n";
-        $text .= '*Project TotalApplicants* : '.$projectTotalApplicants;
+        $text .= '*Project TotalApplicants* : ' . $projectTotalApplicants;
         $text .= "\n";
         $text .= "\n";
         $text .= "\n";
         $text .= '*Client Details* : ';
         $text .= "\n";
-        $text .= '*Total Hires* : '.$clientTotalHires;
+        $text .= '*Total Hires* : ' . $clientTotalHires;
         $text .= "\n";
-        $text .= '*Total Spend* : '.$clientTotalSpend;
+        $text .= '*Total Spend* : ' . $clientTotalSpend;
         $text .= "\n";
-        $text .= '*Total Spend Currency* : '.$clientTotalSpendCurrency;
+        $text .= '*Total Spend Currency* : ' . $clientTotalSpendCurrency;
         $text .= "\n";
-        $text .= '*Total Reviews* : '.$clientTotalReviews;
+        $text .= '*Total Reviews* : ' . $clientTotalReviews;
         $text .= "\n";
-        $text .= '*Total Feedback* : '.$clientTotalFeedback;
+        $text .= '*Total Feedback* : ' . $clientTotalFeedback;
         $text .= "\n";
-        $text .= '*Total Posted Jobs* : '.$clientTotalPostedJobs;
+        $text .= '*Total Posted Jobs* : ' . $clientTotalPostedJobs;
         $text .= "\n";
-        $text .= '*Job Link*  :' .'https://www.upwork.com/jobs/'.$job->ciphertext;
+        $text .= '*Job Link*  :' . 'https://www.upwork.com/jobs/' . $job->ciphertext;
         return $text;
     }
 
     function getAdditonalData()
     {
-        if(empty($this->json)) return;
-        return Arr::dot(json_decode($this->json,true));
+        if (empty($this->json))
+            return;
+        return Arr::dot(json_decode($this->json, true));
     }
 
     function getCurrencySymbol()
@@ -81,15 +81,15 @@ class Job extends BaseModel
     }
     public function searches()
     {
-        return $this->belongsToMany(JobSearch::class,'job_searches_jobs_pivot')->withPivot(['is_slack_webhook_sent']);
+        return $this->belongsToMany(JobSearch::class, 'job_searches_jobs_pivot')->withPivot(['is_slack_webhook_sent']);
     }
     public function categories()
     {
-        return $this->belongsToMany(Category::class,'job_categories');
+        return $this->belongsToMany(Category::class, 'job_categories');
     }
     public function skills()
     {
-        return $this->belongsToMany(Skill::class,'job_skills');
+        return $this->belongsToMany(Skill::class, 'job_skills');
     }
     public function latestActivity()
     {
@@ -98,5 +98,10 @@ class Job extends BaseModel
     public function activities()
     {
         return $this->hasMany(JobActivity::class);
+    }
+
+    public function aiProposals()
+    {
+        return $this->hasMany(AiJobProposal::class);
     }
 }
