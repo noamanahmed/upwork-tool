@@ -51,14 +51,8 @@ class GenerateAiJobProposal implements ShouldQueue
                 throw new \Exception("Job not found.");
             }
 
-            // Extract relevant job details to pass to the agent
-            $jobData = [
-                'title' => $job->title,
-                'description' => $job->slack_notification_message ?? null,
-            ];
 
-            $promptText = $this->aiJobProposal->getPromptText() . json_encode($jobData, JSON_PRETTY_PRINT);
-
+            $promptText = $this->aiJobProposal->getPromptText();
             $agent = app(\App\Ai\Agents\AiJobProposalAgent::class);
             $agent->setConversationId($this->aiJobProposal->conversation_id);
 
