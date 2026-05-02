@@ -37,7 +37,7 @@ class GenerateAiJobProposal implements ShouldQueue
                 $this->processProposal();
             }, function () {
                 // Could not obtain lock; push the job back onto the queue
-                $this->release(15);
+                $this->reQueueJob();
             });
     }
 
@@ -76,5 +76,13 @@ class GenerateAiJobProposal implements ShouldQueue
 
             throw $e;
         }
+    }
+
+    public function reQueueJob()
+    {
+        static::dispatch($this->aiJobProposal)->delay(now()->addSeconds(15));
+
+        // 2. Delete the current job instance so it doesn't "fail" or "retry"
+        $this->delete();
     }
 }
