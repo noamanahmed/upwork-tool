@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1 ;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\StoreUpWorkRequest;
 use App\Http\Requests\UpdateUpWorkRequest;
@@ -17,7 +17,8 @@ class UpWorkController extends BaseController
     public function __construct(
         private UpWorkService $upworkService,
         private JobService $jobService
-    ){}
+    ) {
+    }
 
     public function init(Request $request)
     {
@@ -27,11 +28,11 @@ class UpWorkController extends BaseController
     {
         return $this->upworkService->code();
     }
-    public function jobs(JobSearch $jobSearch,Request $request)
+    public function jobs(JobSearch $jobSearch, Request $request)
     {
         return $this->upworkService->jobs($jobSearch->toArray());
     }
-    public function rssJobs(RssJobSearches $jobSearch,Request $request)
+    public function rssJobs(RssJobSearches $jobSearch, Request $request)
     {
         return $this->upworkService->rssJobs($jobSearch);
     }
@@ -78,5 +79,66 @@ class UpWorkController extends BaseController
     public function proposals(Request $request)
     {
         return $this->upworkService->proposals();
+    }
+
+    public function generateProposal($jobId, Request $request)
+    {
+        $job = Job::findOrFail($jobId);
+
+        $provider = $request->get('provider', config('services.ai.provider'));
+        $modelName = config("services.ai.{$provider}.model", 'gpt-4');
+        $conversationId = config("services.ai.{$provider}.conversation_id", 'openai');
+
+        if (empty($provider) || empty($modelName) || empty($conversationId)) {
+            return $this->errorfullApiResponse([
+                'message' => 'Please provide a valid provider, model, and conversation id.',
+            ]);
+        }
+
+        // Check if an AI proposal already exists for this job
+        $existingProposal = \App\Models\AiJobProposal::where('job_id', $jobId)
+            ->where('provider', $provider)
+            ->first();
+
+        if ($existingProposal) {
+            if ($existingProposal->status === 'completed') {
+                return $this->successfullApiResponse([
+                    'message' => 'The AI proposal is already generated.',
+                    'proposal' => $existingProposal
+                ]);
+            }
+
+            return $this->successfullApiResponse([
+                'message' => 'The AI proposal is currently being generated.',
+                'proposal' => $existingProposal
+            ]);
+        }
+
+        // Not generated yet, create and dispatch
+        $aiJobProposal = \App\Models\AiJobProposal::create([
+            'job_id' => $jobId,
+            'status' => 'generating',
+            'provider' => $provider,
+            'model' => $modelName,
+            'conversation_id' => $conversationId,
+            'proposal' => 'N/A',
+        ]);
+
+        dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
+
+        return $this->successfullApiResponse([
+            'message' => 'The AI proposal is currently being generated.',
+            'proposal' => $aiJobProposal
+        ]);
+    }
+
+    public function getAiJobProposal($jobId, $aiJobProposalId)
+    {
+        $proposal = \App\Models\AiJobProposal::where('job_id', $jobId)
+            ->findOrFail($aiJobProposalId);
+
+        return $this->successfullApiResponse([
+            'proposal' => $proposal
+        ]);
     }
 }

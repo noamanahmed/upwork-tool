@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Models\AiJobProposal;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Contracts\HasTools;
@@ -14,12 +15,20 @@ class AiJobProposalAgent implements Agent, Conversational, HasTools
 {
     use Promptable;
 
+    public ?string $conversationId = null;
+
+    public function setConversationId(?string $conversationId)
+    {
+        $this->conversationId = $conversationId;
+        return $this;
+    }
+
     /**
      * Get the instructions that the agent should follow.
      */
     public function instructions(): Stringable|string
     {
-        return 'You are a helpful assistant.';
+        return app(AiJobProposal::class)->getModelInstructions();
     }
 
     /**
@@ -29,6 +38,8 @@ class AiJobProposalAgent implements Agent, Conversational, HasTools
      */
     public function messages(): iterable
     {
+        // Concept of conversation_id allows sending job data to a specific context
+        // This will be expanded later or intercepted by the provider Gateway
         return [];
     }
 
