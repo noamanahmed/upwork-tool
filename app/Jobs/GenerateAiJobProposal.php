@@ -56,7 +56,6 @@ class GenerateAiJobProposal implements ShouldQueue
             $agent = app(\App\Ai\Agents\AiJobProposalAgent::class);
             $agent->setConversationId($this->aiJobProposal->conversation_id);
 
-            // dd($this->aiJobProposal->toArray(), $promptText);
             // Execute using the stored provider and model
             $response = $agent->prompt(
                 prompt: $promptText,
