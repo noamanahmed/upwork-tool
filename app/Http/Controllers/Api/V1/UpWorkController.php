@@ -123,7 +123,7 @@ class UpWorkController extends BaseController
             'conversation_id' => $conversationId,
             'proposal' => 'N/A',
         ]);
-        
+
         $aiJobProposal = $aiJobProposal->fresh(); // Refresh to get any default values or changes from the model
         $aiJobProposal->prompt = $aiJobProposal->getPromptText();
         $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();

@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
 
 class AiJobProposal extends BaseModel
 {
-
     protected $fillable = [
         'name',
         'job_id',
@@ -17,122 +17,224 @@ class AiJobProposal extends BaseModel
         'description',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
     public function job()
     {
         return $this->belongsTo(Job::class);
     }
 
-    public function getJobDetails()
+    /*
+    |--------------------------------------------------------------------------
+    | Public API
+    |--------------------------------------------------------------------------
+    */
+    public function getPromptText(): string
     {
-        $jobDetails = [
-            'title' => 'N/A',
-            'description' => 'N/A',
-        ];
-        if ($this->job) {
-            $jobDetails['title'] = $this->job->title ?? 'N/A';
-            $jobDetails['description'] = $this->job->description ?? 'N/A';
-        }
-        return $jobDetails;
-    }
-
-    public function getPromptText()
-    {
-        $jobDetails = [
-            'title' => 'N/A',
-            'description' => 'N/A',
-        ];
-        if ($this->job) {
-            $jobDetails['title'] = $this->job->title ?? 'N/A';
-            $jobDetails['description'] = $this->job->description ?? 'N/A';
-        }
+        $job = $this->getJobDetails();
+        $context = $this->buildContext();
 
         return <<<EOT
-    Write a highly tailored Upwork proposal for the following job.
+Write a highly tailored Upwork proposal for the following job.
 
-    IMPORTANT:
-    - Adapt the proposal specifically to the job description
-    - Use my experience only where relevant
-    - Do not include everything — only what helps win THIS job
-    - Focus on solving the client’s problem
+IMPORTANT:
+- Use ONLY relevant information from provided context
+- Do not dump all skills or experience
+- Focus on solving the client’s problem
 
+=====================
+JOB DETAILS
+=====================
 
-    Job Title: 
-    
-    {$jobDetails['title']}
-    Job Description: 
-    
-    {$jobDetails['description']}
+Title:
+{$job['title']}
 
-    EOT;
+Description:
+{$job['description']}
+
+=====================
+FREELANCER CONTEXT
+=====================
+
+Name: {$context['name']}
+
+Relevant Skills:
+{$context['skills']}
+
+Key Achievements:
+{$context['achievements']}
+
+{$context['case_study']}
+
+=====================
+INSTRUCTIONS
+=====================
+- Pick only what is relevant
+- Keep it concise and sharp
+- Focus on results and confidence
+
+EOT;
     }
 
-    public function getModelInstructions()
+    public function getModelInstructions(): string
     {
         return <<<EOT
-You are an expert Upwork proposal writer specialized in writing HIGH-CONVERTING proposals for technical jobs.
-
-Your job is to write proposals that feel human, confident, and tailored — not generic or robotic.
+You are an expert Upwork proposal writer focused on HIGH-CONVERSION technical proposals.
 
 CRITICAL RULES:
 
 1. FIRST LINE = HOOK
-- The first 1–2 lines MUST grab attention because they are shown in Upwork preview.
-- It should directly address the client’s problem or show confidence. Donot exceed more than 30-40 words in the first line.
-- Avoid greetings like "Hi" or "Hello" in the first line.
-- Example style:
-  "If your API is slow or breaking under load, I’ve fixed this exact problem before."
+- First line must grab attention (max 30–40 words)
+- No greetings
+- Directly address problem or show confidence
 
-2. HUMAN TONE
-- Write like a real developer, not like AI.
-- Use simple, natural English.
-- Avoid complex vocabulary.
-- Keep it conversational but professional.
-- No buzzwords or fluff.
+2. HUMAN STYLE
+- Write like a real developer
+- Simple, natural English
+- No fluff, no buzzwords
 
-3. PERSONALIZATION USING CONTEXT
-Adapt using this freelancer profile:
-
-- 8+ years Full Stack Developer (Laravel, Vue, WordPress)
-- AWS Cloud practitioner certified.
-- Strong backend + API + performance optimization
-- Reduced API TTFB by 90%
-- Improved DB performance by 500% using SQL optimization
-- Experience with microservices (Laravel/Lumen)
-- DevOps: AWS, Kubernetes, CI/CD, Docker
-- Debugging and fixing complex systems
-- Experience with integrations (DocuSign, streaming, shipping APIs, etc.)
-- Managed large-scale systems (2000+ sites, large datasets)
-- First Name: Nauman
-- Last Name: Ahmed
-
-
-4. STRUCTURE (IMPORTANT)
-Keep proposal short and structured:
-
-- Hook (very strong opening)
-- Show understanding of problem
-- Explain how YOU would solve it (brief, technical confidence)
-- Add 1–2 relevant past achievements (with metrics if possible)
-- End with a simple CTA (not pushy)
-
-5. AVOID GENERIC CONTENT
-- Do NOT say "I am perfect for this job"
+3. PRECISION
+- Use ONLY relevant context provided
+- Do NOT list all skills
 - Do NOT repeat job description
-- Do NOT write long paragraphs
-- Do NOT sound like a template
 
-6. STYLE
-- Use short paragraphs
-- Keep it concise (150–250 words ideal)
-- Prefer clarity over grammar perfection
+4. STRUCTURE
+- Hook
+- Show understanding
+- Explain approach (technical but brief)
+- Add 1 strong proof (achievement or case study)
+- End with simple CTA
 
-7. OPTIONAL EDGE
-- If job is technical, include 1 specific insight or suggestion
-- If job is vague, ask 1 smart question
+5. LENGTH
+- 150–250 words
+- Short paragraphs
+
+6. EDGE
+- Add 1 technical insight OR ask 1 smart question
 
 GOAL:
-Make the client feel: "This guy understands my problem and can solve it."
+Client should feel:
+"This developer understands my problem and knows how to solve it."
 
 EOT;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Core Context Builder
+    |--------------------------------------------------------------------------
+    */
+    protected function buildContext(): array
+    {
+        $config = config('admin');
+        $jobText = strtolower($this->job->title . ' ' . $this->job->description);
+
+        $skills = $this->selectRelevantSkills($config['skills'], $jobText);
+        $caseStudy = $this->selectCaseStudy($config['case_studies'], $jobText);
+        $achievements = $this->selectAchievements($config);
+
+        return [
+            'name' => $config['personal']['first_name'] . ' ' . $config['personal']['last_name'],
+            'skills' => $this->formatSkills($skills),
+            'achievements' => $this->formatAchievements($achievements),
+            'case_study' => $this->formatCaseStudy($caseStudy),
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selection Logic
+    |--------------------------------------------------------------------------
+    */
+    protected function selectRelevantSkills(array $skills, string $jobText): array
+    {
+        $matched = [];
+
+        foreach ($skills as $group => $items) {
+            foreach ($items as $category) {
+                foreach ((array) $category as $skill) {
+                    if (Str::contains($jobText, Str::lower($skill))) {
+                        $matched[$group][] = $skill;
+                    }
+                }
+            }
+        }
+
+        return $matched;
+    }
+
+    protected function selectCaseStudy(array $caseStudies, string $jobText): ?array
+    {
+        foreach ($caseStudies as $caseStudy) {
+            foreach ($caseStudy['tags'] as $tag) {
+                if (Str::contains($jobText, Str::lower($tag))) {
+                    return $caseStudy;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected function selectAchievements(array $config): array
+    {
+        $limit = $config['ai_rules']['max_achievements'] ?? 2;
+        return array_slice($config['achievements'], 0, $limit);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Formatters
+    |--------------------------------------------------------------------------
+    */
+    protected function formatSkills(array $skills): string
+    {
+        if (empty($skills)) {
+            return 'N/A';
+        }
+
+        $output = '';
+
+        foreach ($skills as $group => $items) {
+            $output .= ucfirst($group) . ': ' . implode(', ', array_unique($items)) . "\n";
+        }
+
+        return trim($output);
+    }
+
+    protected function formatAchievements(array $achievements): string
+    {
+        return '- ' . implode("\n- ", $achievements);
+    }
+
+    protected function formatCaseStudy(?array $caseStudy): string
+    {
+        if (!$caseStudy) {
+            return '';
+        }
+
+        return <<<EOT
+Relevant Past Work:
+- {$caseStudy['title']}
+- Problem: {$caseStudy['problem']}
+- Solution: {$caseStudy['solution']}
+- Result: {$caseStudy['result']}
+EOT;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Helper
+    |--------------------------------------------------------------------------
+    */
+    protected function getJobDetails(): array
+    {
+        return [
+            'title' => $this->job->title ?? 'N/A',
+            'description' => $this->job->description ?? 'N/A',
+        ];
     }
 }
