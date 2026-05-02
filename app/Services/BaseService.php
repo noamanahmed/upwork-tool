@@ -97,6 +97,9 @@ class BaseService implements BaseServiceContract{
     public function successfullApiResponse(Array | Collection | EloquentCollection $data){
         return $this->apiResponse($data,200);
     }
+    public function errorfullApiResponse(Array | Collection | EloquentCollection $data){
+        return $this->apiResponse($data,400);
+    }
     public function apiResponseWithValidationErrors($data){
         return $this->apiResponse($data,422);
     }

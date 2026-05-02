@@ -8,6 +8,12 @@ class AiJobProposal extends BaseModel
 
     protected $fillable = [
         'name',
+        'job_id',
+        'proposal',
+        'status',
+        'provider',
+        'model',    
+        'conversation_id',
         'description',
     ];
 

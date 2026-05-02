@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\V1\EmployerController;
 use App\Http\Controllers\Api\V1\LeadController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\OrderController;
-use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuotationController;
 use App\Http\Controllers\Api\V1\RoleController;
@@ -67,7 +66,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiCrudResource('users', UserController::class);
     Route::get('users/type/dropdown', [UserController::class, 'dropdownForType']);
     Route::apiCrudResource('roles', RoleController::class);
-    Route::get('permissions', [PermissionController::class, 'index']);
 });
 
 Route::get('/upwork/auth', [UpWorkController::class, 'init']);

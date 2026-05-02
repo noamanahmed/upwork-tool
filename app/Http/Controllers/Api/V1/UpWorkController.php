@@ -10,7 +10,7 @@ use App\Models\RssJobSearches;
 use App\Models\UpWork;
 use App\Services\JobService;
 use App\Services\UpWorkService;
-use Request;
+use Illuminate\Http\Request;
 
 class UpWorkController extends BaseController
 {
@@ -90,7 +90,7 @@ class UpWorkController extends BaseController
         $conversationId = config("services.ai.{$provider}.conversation_id", 'openai');
 
         if (empty($provider) || empty($modelName) || empty($conversationId)) {
-            return $this->errorfullApiResponse([
+            return $this->upworkService->errorfullApiResponse([
                 'message' => 'Please provide a valid provider, model, and conversation id.',
             ]);
         }
@@ -102,17 +102,18 @@ class UpWorkController extends BaseController
 
         if ($existingProposal) {
             if ($existingProposal->status === 'completed') {
-                return $this->successfullApiResponse([
+                return $this->upworkService->successfullApiResponse([
                     'message' => 'The AI proposal is already generated.',
                     'proposal' => $existingProposal
                 ]);
             }
 
-            return $this->successfullApiResponse([
+            return $this->upworkService->successfullApiResponse([
                 'message' => 'The AI proposal is currently being generated.',
                 'proposal' => $existingProposal
             ]);
         }
+
 
         // Not generated yet, create and dispatch
         $aiJobProposal = \App\Models\AiJobProposal::create([
@@ -126,7 +127,7 @@ class UpWorkController extends BaseController
 
         dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
 
-        return $this->successfullApiResponse([
+        return $this->upworkService->successfullApiResponse([
             'message' => 'The AI proposal is currently being generated.',
             'proposal' => $aiJobProposal
         ]);
