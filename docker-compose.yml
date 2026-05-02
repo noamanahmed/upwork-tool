@@ -1,25 +1,23 @@
 services:
     laravel-upwork.test:
         build:
-            context: ./vendor/laravel/sail/runtimes/8.2
-            dockerfile: Dockerfile
+            context: .
+            target: development
             args:
-                WWWGROUP: '${WWWGROUP}'
-        image: sail-8.2/app
-        extra_hosts:
-            - 'host.docker.internal:host-gateway'
+                # UID and GID must be set as environment variables on the host machine
+                USER_ID: $UID
+                GROUP_ID: $GID
+        image: serversideup/php:8.3-fpm-nginx
+        restart: unless-stopped
         ports:
-            - '${APP_PORT:-80}:80'
-            - '${APP_ADMIN_PORT:-2019}:2019'
+            - '${APP_PORT:-10999}:80'
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
-            SUPERVISOR_PHP_COMMAND: "/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan octane:start --server=frankenphp --host=0.0.0.0 --admin-port=2019 --port=80 --watch --poll"
-
+        environment:        
+            PUID : $UID
+            PGID : $GID
+            PHP_OPCACHE_ENABLE: 0
+            # Laravel variables
+            AUTORUN_ENABLED: "true"
         volumes:
             - '.:/var/www/html'
         networks:
@@ -27,7 +25,12 @@ services:
         depends_on:
             - mysql
             - redis
-            - mailpit
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost/healthcheck"] # Ensure your route exists or use /
+            interval: 10s
+            timeout: 5s
+            retries: 3
+
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -41,17 +44,13 @@ services:
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
         volumes:
             - 'sail-mysql:/var/lib/mysql'
-            - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
         networks:
             - sail
         healthcheck:
-            test:
-                - CMD
-                - mysqladmin
-                - ping
-                - '-p${DB_PASSWORD}'
+            test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}"]
             retries: 3
             timeout: 5s
+
     redis:
         image: 'redis:alpine'
         ports:
@@ -61,12 +60,10 @@ services:
         networks:
             - sail
         healthcheck:
-            test:
-                - CMD
-                - redis-cli
-                - ping
+            test: ["CMD", "redis-cli", "ping"]
             retries: 3
             timeout: 5s
+
     mailpit:
         image: 'axllent/mailpit:latest'
         ports:
@@ -74,39 +71,13 @@ services:
             - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
         networks:
             - sail
-    adminer:
-        image: adminer:latest
-        restart: unless-stopped
-        ports:
-        - 9166:8080
-        environment:
-            ADMINER_DESIGN: pepa-linha
-            ADMINER_DEFAULT_SERVER: mysql
-            ADMINER_USERNAME: root
-            ADMINER_PASSWORD: upwork-tool
-            ADMINER_AUTOLOGIN: 1
-        networks:
-            - sail
-    phpmyadmin:
-        image: phpmyadmin/phpmyadmin
-        hostname: phpmyadmin
-        environment:
-            PMA_HOST: mysql
-            PMA_PORT: 3306
-            PMA_ARBITRARY: 1
-            UPLOAD_LIMIT: 512M
-        restart: unless-stopped
-        ports:
-        - 9199:80
-        networks:
-            - sail
+
 networks:
     sail:
         driver: bridge
+
 volumes:
     sail-mysql:
         driver: local
     sail-redis:
-        driver: local
-    sail-meilisearch:
         driver: local
