@@ -261,8 +261,8 @@
             fetch(apiUrl)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.data?.proposal) {
-                        const proposal = data.data.proposal;
+                    if (data.proposal) {
+                        const proposal = data.proposal;
                         proposalId = proposal.id;
 
                         if (proposal.status === 'completed') {
@@ -291,8 +291,8 @@
                 fetch(`/api/v1/upwork/job/${jobId}/${proposalId}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data.data?.proposal) {
-                            const proposal = data.data.proposal;
+                        if (data.proposal) {
+                            const proposal = data.proposal;
 
                             if (proposal.status === 'completed') {
                                 clearInterval(pollInterval);

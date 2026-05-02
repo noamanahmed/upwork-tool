@@ -18,7 +18,8 @@
         "laravel/tinker": "^2.11",
         "league/flysystem-aws-s3-v3": "^3.25",
         "spatie/laravel-permission": "^6.4",
-        "spatie/laravel-query-builder": "^6.0"
+        "spatie/laravel-query-builder": "^6.0",
+        "upwork/php-upwork-oauth2": "^2.5"
     },
 
     "require-dev": {
