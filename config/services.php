@@ -33,4 +33,17 @@ return [
     'slack' => [
         'webhook_url' => env('SLACK_WEBHOOK_URL'),
     ],
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'openai'),
+        'openai' => [
+            'key' => env('OPENAI_API_KEY'),
+            'model' => env('OPENAI_MODEL', 'gpt-4'),
+            'conversation_id' => env('OPENAI_CONVERSATION_ID', 'openai'),
+        ],
+        'gemini' => [
+            'key' => env('GEMINI_API_KEY'),
+            'model' => env('GEMINI_MODEL', 'gemini-1.5-pro'),
+            'conversation_id' => env('GEMINI_CONVERSATION_ID', 'gemini')
+        ]
+    ],
 ];

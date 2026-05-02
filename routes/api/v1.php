@@ -37,132 +37,136 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('translations')->group(function(){
-    Route::get('/',[TranslationController::class,'index']);
+Route::prefix('translations')->group(function () {
+    Route::get('/', [TranslationController::class, 'index']);
 });
-Route::prefix('languages')->group(function(){
-    Route::get('/',[LanguageController::class,'index']);
-    Route::get('dropdown',[LanguageController::class,'dropdown']);
-    Route::get('/{language}',[LanguageController::class,'show']);
+Route::prefix('languages')->group(function () {
+    Route::get('/', [LanguageController::class, 'index']);
+    Route::get('dropdown', [LanguageController::class, 'dropdown']);
+    Route::get('/{language}', [LanguageController::class, 'show']);
 
 });
 
-Route::prefix('auth')->group(function(){
-    Route::post('login',[AuthController::class,'login']);
-    Route::post('register',[AuthController::class,'register']);
-    Route::get('resend-verification-email',[AuthController::class,'resendVerificationEmail'])->middleware(['auth:sanctum']);
-    Route::post('verify-email',[AuthController::class,'verifyEmail'])->middleware(['auth:sanctum']);
-    Route::post('forgot-password',[AuthController::class,'forgotPassword']);
-    Route::post('reset-password',[AuthController::class,'resetPassword']);
+Route::prefix('auth')->group(function () {
+    Route::post('login', [AuthController::class, 'login']);
+    Route::post('register', [AuthController::class, 'register']);
+    Route::get('resend-verification-email', [AuthController::class, 'resendVerificationEmail'])->middleware(['auth:sanctum']);
+    Route::post('verify-email', [AuthController::class, 'verifyEmail'])->middleware(['auth:sanctum']);
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('reset-password', [AuthController::class, 'resetPassword']);
 });
 
-Route::middleware(['auth:sanctum'])->group(function() {
-    Route::prefix('account')->group(function(){
-        Route::get('profile',[AccountController::class,'profile']);
-        Route::patch('profile',[AccountController::class,'updateProfile']);
-        Route::get('settings',[AccountController::class,'settings']);
-        Route::patch('settings',[AccountController::class,'updateSettings']);
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('account')->group(function () {
+        Route::get('profile', [AccountController::class, 'profile']);
+        Route::patch('profile', [AccountController::class, 'updateProfile']);
+        Route::get('settings', [AccountController::class, 'settings']);
+        Route::patch('settings', [AccountController::class, 'updateSettings']);
     });
 
-    Route::apiCrudResource('users',UserController::class);
-    Route::get('users/type/dropdown',[UserController::class,'dropdownForType']);
-    Route::apiCrudResource('roles',RoleController::class);
-    Route::get('permissions',[PermissionController::class,'index']);
+    Route::apiCrudResource('users', UserController::class);
+    Route::get('users/type/dropdown', [UserController::class, 'dropdownForType']);
+    Route::apiCrudResource('roles', RoleController::class);
+    Route::get('permissions', [PermissionController::class, 'index']);
 });
 
-Route::get('/upwork/auth',[UpWorkController::class,'init']);
-Route::get('/upwork/code',[UpWorkController::class,'code']);
-Route::get('/upwork/jobs/{jobSearch}',[UpWorkController::class,'jobs']);
-Route::get('/upwork/rss-jobs/{jobSearch}',[UpWorkController::class,'rssJobs']);
-Route::get('/upwork/categories',[UpWorkController::class,'categories']);
-Route::get('/upwork/skills',[UpWorkController::class,'skills']);
-Route::get('/upwork/timezones',[UpWorkController::class,'timezones']);
-Route::get('/upwork/languages',[UpWorkController::class,'languages']);
-Route::get('/upwork/countries',[UpWorkController::class,'countries']);
-Route::get('/upwork/regions',[UpWorkController::class,'regions']);
-Route::get('/upwork/analytics',[UpWorkController::class,'analytics']);
-Route::get('/upwork/job/{jobId}',[UpWorkController::class,'job']);
-Route::get('/upwork/job/{jobId}/slack-message',[UpWorkController::class,'jobSlackMessage']);
-Route::get('/upwork/proposals',[UpWorkController::class,'proposals']);
+Route::get('/upwork/auth', [UpWorkController::class, 'init']);
+Route::get('/upwork/code', [UpWorkController::class, 'code']);
+Route::get('/upwork/jobs/{jobSearch}', [UpWorkController::class, 'jobs']);
+Route::get('/upwork/rss-jobs/{jobSearch}', [UpWorkController::class, 'rssJobs']);
+Route::get('/upwork/categories', [UpWorkController::class, 'categories']);
+Route::get('/upwork/skills', [UpWorkController::class, 'skills']);
+Route::get('/upwork/timezones', [UpWorkController::class, 'timezones']);
+Route::get('/upwork/languages', [UpWorkController::class, 'languages']);
+Route::get('/upwork/countries', [UpWorkController::class, 'countries']);
+Route::get('/upwork/regions', [UpWorkController::class, 'regions']);
+Route::get('/upwork/analytics', [UpWorkController::class, 'analytics']);
+Route::get('/upwork/job/{jobId}', [UpWorkController::class, 'job']);
+Route::get('/upwork/job/{jobId}/slack-message', [UpWorkController::class, 'jobSlackMessage']);
+Route::get('/upwork/proposals', [UpWorkController::class, 'proposals']);
 
 
-Route::get('/upwork/debug/slack',function(){
-    $job= Job::latest()->inRandomOrder()->first();
+
+Route::get('/upwork/job/{jobId}/generate-proposal', [UpWorkController::class, 'generateProposal']);
+Route::get('/upwork/job/{jobId}/{aiJobProposal}', [UpWorkController::class, 'getAiJobProposal']);
+
+
+Route::get('/upwork/debug/slack', function () {
+    $job = Job::latest()->inRandomOrder()->first();
     $jobSearch = JobSearch::latest()->first();
     app(SlackService::class)->setWebhookUrl($jobSearch->slack_webhook_url)->sendNotification($job->slack_notification_message);
 });
-Route::get('/upwork/debug/categories',function(){
-    $categories= app(UpWorkService::class)->categories();
+Route::get('/upwork/debug/categories', function () {
+    $categories = app(UpWorkService::class)->categories();
     app(CategoryService::class)->insertCategoriesFromApiResponse($categories);
 });
-Route::get('/upwork/debug/skills',function(){
+Route::get('/upwork/debug/skills', function () {
     $maxRecords = 200;
     $start = 0;
     $offset = 100;
     $skills = [];
-    while($start < $maxRecords)
-    {
-        $data = app(UpWorkService::class)->skills($offset,$start)->getContent();
-        if(empty($data)) break;
-        $skills = [...$skills,...json_decode($data,true)[0]];
+    while ($start < $maxRecords) {
+        $data = app(UpWorkService::class)->skills($offset, $start)->getContent();
+        if (empty($data))
+            break;
+        $skills = [...$skills, ...json_decode($data, true)[0]];
         $start += $offset;
     }
 
     app(CategoryService::class)->insertSkillsFromApiResponse($skills);
 });
 
-Route::get('/upwork/debug/job-search/{id}',function($id){
+Route::get('/upwork/debug/job-search/{id}', function ($id) {
     $jobSearch = JobSearch::findOrfail($id);
-    $options =  $jobSearch->toArray();
-    $cacheKey = 'upwork_jobs_'.$id;
+    $options = $jobSearch->toArray();
+    $cacheKey = 'upwork_jobs_' . $id;
     $jobs = Cache::get($cacheKey);
 
     // $jobs = app(UpWorkService::class)->jobs($options);
     // return $jobs;
 
-    if(empty($jobs))
-    {
+    if (empty($jobs)) {
         $jobs = app(UpWorkService::class)->jobs($options);
-        Cache::set($cacheKey,$jobs,3600);
+        Cache::set($cacheKey, $jobs, 3600);
     }
 
 
 
     app(JobService::class)->insertJobsFromApiResponse($jobs);
-    app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs,$jobSearch);
+    app(JobService::class)->attachJobsToJobSearchesFromApiResponse($jobs, $jobSearch);
     app(CategoryService::class)->attachCategoriesToJobsFromApiResponse($jobs);
     app(JobActivityService::class)->insertActivitiesFromApiResponse($jobs);
 });
-Route::get('/upwork/debug/rss/{id}',function($id){
+Route::get('/upwork/debug/rss/{id}', function ($id) {
     $rssJobSearch = RssJobSearches::findOrfail($id);
     $jobs = app(UpWorkService::class)->rssJobs($rssJobSearch);
-    app(JobService::class)->insertRssJobs($jobs,$rssJobSearch);
+    app(JobService::class)->insertRssJobs($jobs, $rssJobSearch);
 });
-Route::get('/upwork/debug/job-activity/{id}',function($id){
+Route::get('/upwork/debug/job-activity/{id}', function ($id) {
     $job = Job::findOrfail($id);
     $activities = app(UpWorkService::class)->jobActivity($job->toArray());
-    app(JobActivityService::class)->updatejobActivities($job,$activities);
+    app(JobActivityService::class)->updatejobActivities($job, $activities);
 });
-Route::get('/upwork/debug/job-activity/{id}/{schedule}',function($id,$schedule){
+Route::get('/upwork/debug/job-activity/{id}/{schedule}', function ($id, $schedule) {
     $job = Job::findOrfail($id);
-    $activtyAlreadyExists = JobActivity::where('job_id',$job->id)->where('schedule',$schedule)->count();
-    if($activtyAlreadyExists > 0) return;
+    $activtyAlreadyExists = JobActivity::where('job_id', $job->id)->where('schedule', $schedule)->count();
+    if ($activtyAlreadyExists > 0)
+        return;
     $activities = app(UpWorkService::class)->jobActivity($job->toArray());
-    app(JobActivityService::class)->updatejobActivities($job,$activities,$schedule);
+    app(JobActivityService::class)->updatejobActivities($job, $activities, $schedule);
 });
-Route::get('/upwork/debug/proposals',function(){
+Route::get('/upwork/debug/proposals', function () {
     $cacheKey = 'upwork_proposals';
     $proposals = Cache::get($cacheKey);
-    if(is_null($proposals))
-    {
+    if (is_null($proposals)) {
         $proposals = app(UpWorkService::class)->proposals();
-        Cache::set($cacheKey,$proposals,3600);
+        Cache::set($cacheKey, $proposals, 3600);
     }
     app(ProposalService::class)->insertProposalsFromApiResponse($proposals);
 });
 
 
 
-Route::fallback(function(){
+Route::fallback(function () {
     abort(404);
 });
