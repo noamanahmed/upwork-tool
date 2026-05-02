@@ -52,8 +52,7 @@ class AppServiceProvider extends ServiceProvider
             $language = Language::where('code',$header)->firstOrFail();
             return $language->translations;
         });
-
-        \Laminas\Feed\Reader\Reader::setHttpClient(new GuzzleClient());
+        
 
     }
 
