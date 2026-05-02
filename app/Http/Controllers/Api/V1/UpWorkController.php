@@ -129,7 +129,6 @@ class UpWorkController extends BaseController
         $aiJobProposal->prompt = $aiJobProposal->getPromptText();
         $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
 
-        dd($aiJobProposal->toArray());
         $aiJobProposal->save();
 
         dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
