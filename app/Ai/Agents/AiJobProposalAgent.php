@@ -16,10 +16,17 @@ class AiJobProposalAgent implements Agent, Conversational, HasTools
     use Promptable;
 
     public ?string $conversationId = null;
+    public ?string $instructionsText = null;
 
     public function setConversationId(?string $conversationId)
     {
         $this->conversationId = $conversationId;
+        return $this;
+    }
+
+    public function setInstructions(?string $instructionsText)
+    {
+        $this->instructionsText = $instructionsText;
         return $this;
     }
 
@@ -28,7 +35,7 @@ class AiJobProposalAgent implements Agent, Conversational, HasTools
      */
     public function instructions(): Stringable|string
     {
-        return app(AiJobProposal::class)->getModelInstructions();
+        return $this->instructionsText ?? app(AiJobProposal::class)->getModelInstructions();
     }
 
     /**

@@ -185,11 +185,23 @@ return [
     |--------------------------------------------------------------------------
     */
     'achievements' => [
-        'Reduced API response time (TTFB) by 90%',
-        'Improved database performance by up to 500%',
-        'Reduced production error rates by 70%',
-        'Managed and maintained 2000+ WordPress websites',
-        'Implemented full monitoring and observability using NewRelic',
+        'backend' => [
+            'Reduced API response time (TTFB) by 90%',
+            'Improved database performance by up to 500%',
+        ],
+        'infrastructure' => [
+            'Implemented full monitoring and observability using NewRelic',
+            'Reduced production error rates by 70%',
+            'Deployed scalable AWS cloud architectures',
+        ],
+        'cms' => [
+            'Managed and maintained 2000+ WordPress websites',
+            'Developed custom plugins for complex content management',
+        ],
+        'frontend' => [
+            'Achieved 90+ Lighthouse Performance Scores for complex web apps',
+            'Designed modular and reusable Vue.js/React component libraries',
+        ]
     ],
 
     /*
@@ -292,7 +304,13 @@ return [
             'solution' => 'Developed a HIPAA-compliant system using Laravel and React, integrated third-party services like Brightree and SignalWire, and deployed on AWS with CI/CD pipelines.',
             'result' => 'Delivered a secure, scalable healthcare ecosystem with reliable integrations and production-ready infrastructure.',
             'tech_stack' => [
-                'Laravel 10', 'PHP 8.3', 'PostgreSQL', 'React', 'Chakra UI', 'AWS', 'GitHub Actions'
+                'Laravel 10',
+                'PHP 8.3',
+                'PostgreSQL',
+                'React',
+                'Chakra UI',
+                'AWS',
+                'GitHub Actions'
             ],
             'tags' => ['healthcare', 'api', 'aws', 'fullstack', 'security'],
         ],
@@ -303,7 +321,13 @@ return [
             'solution' => 'Built a modular CRM system using Laravel and Vue.js with role-based access, CI/CD pipelines, and optimized database structure.',
             'result' => 'Improved operational efficiency with a scalable and easy-to-manage CRM system.',
             'tech_stack' => [
-                'Laravel 10', 'PHP 8.3', 'MySQL', 'Vue.js', 'Vuetify', 'Linux VPS', 'GitLab CI/CD'
+                'Laravel 10',
+                'PHP 8.3',
+                'MySQL',
+                'Vue.js',
+                'Vuetify',
+                'Linux VPS',
+                'GitLab CI/CD'
             ],
             'tags' => ['crm', 'fullstack', 'backend'],
         ],
@@ -314,7 +338,13 @@ return [
             'solution' => 'Built a Laravel-based portal integrated with SuiteCRM and DocuSign, including OAuth2 authentication and dynamic application flows.',
             'result' => 'Streamlined application processing and reduced manual work through automation.',
             'tech_stack' => [
-                'Laravel 10', 'PHP 8.2', 'Blade', 'jQuery', 'REST API', 'OAuth2', 'SuiteCRM'
+                'Laravel 10',
+                'PHP 8.2',
+                'Blade',
+                'jQuery',
+                'REST API',
+                'OAuth2',
+                'SuiteCRM'
             ],
             'tags' => ['api', 'integration', 'crm', 'backend'],
         ],
@@ -325,7 +355,13 @@ return [
             'solution' => 'Designed a microservices-based system using Laravel/Lumen deployed on AWS ECS with full order lifecycle management.',
             'result' => 'Enabled seamless fulfillment operations with improved scalability and system reliability.',
             'tech_stack' => [
-                'Laravel 10', 'Lumen', 'MySQL', 'React', 'AWS ECS', 'ECR', 'Microservices'
+                'Laravel 10',
+                'Lumen',
+                'MySQL',
+                'React',
+                'AWS ECS',
+                'ECR',
+                'Microservices'
             ],
             'tags' => ['microservices', 'ecommerce', 'aws', 'backend'],
         ],
@@ -336,7 +372,9 @@ return [
             'solution' => 'Developed a SaaS tool using Laravel with Redis caching for performance optimization.',
             'result' => 'Delivered a fast and scalable backlink tracking system.',
             'tech_stack' => [
-                'Laravel', 'MySQL', 'Redis'
+                'Laravel',
+                'MySQL',
+                'Redis'
             ],
             'tags' => ['saas', 'backend', 'performance'],
         ],
@@ -347,7 +385,11 @@ return [
             'solution' => 'Built a Laravel-based dashboard with multilingual support and optimized UI using Metronic.',
             'result' => 'Enabled efficient lead tracking with support for multiple languages.',
             'tech_stack' => [
-                'Laravel 8', 'MySQL', 'Blade', 'jQuery', 'Metronic'
+                'Laravel 8',
+                'MySQL',
+                'Blade',
+                'jQuery',
+                'Metronic'
             ],
             'tags' => ['crm', 'multilingual', 'backend'],
         ],
@@ -358,7 +400,10 @@ return [
             'solution' => 'Developed a modular ERP system with multiple integrated modules and real-time communication features.',
             'result' => 'Centralized business operations into a single scalable platform.',
             'tech_stack' => [
-                'Laravel 8', 'MySQL', 'Blade', 'jQuery'
+                'Laravel 8',
+                'MySQL',
+                'Blade',
+                'jQuery'
             ],
             'tags' => ['erp', 'backend', 'fullstack'],
         ],
@@ -369,7 +414,9 @@ return [
             'solution' => 'Built an automated Laravel dashboard with proxy rotation and multi-account handling.',
             'result' => 'Enabled fully automated high-volume raffle entries with improved success rate.',
             'tech_stack' => [
-                'Laravel 8', 'MySQL', 'jQuery'
+                'Laravel 8',
+                'MySQL',
+                'jQuery'
             ],
             'tags' => ['automation', 'bots', 'backend'],
         ],
@@ -380,7 +427,8 @@ return [
             'solution' => 'Deployed and configured WireGuard VPN with QR-based client configuration.',
             'result' => 'Delivered secure and user-friendly VPN access for distributed teams.',
             'tech_stack' => [
-                'WireGuard', 'Linux'
+                'WireGuard',
+                'Linux'
             ],
             'tags' => ['vpn', 'devops', 'infrastructure'],
         ],
@@ -391,7 +439,11 @@ return [
             'solution' => 'Configured LAMP/LEMP stack with optimized performance and security settings.',
             'result' => 'Delivered stable and high-performance hosting environments.',
             'tech_stack' => [
-                'Linux', 'Apache', 'Nginx', 'MySQL', 'PHP'
+                'Linux',
+                'Apache',
+                'Nginx',
+                'MySQL',
+                'PHP'
             ],
             'tags' => ['devops', 'server', 'infrastructure'],
         ],
@@ -402,7 +454,9 @@ return [
             'solution' => 'Deployed Squid HTTP and Dante SOCKS5 proxy servers with optimized configurations.',
             'result' => 'Enabled reliable and scalable proxy infrastructure.',
             'tech_stack' => [
-                'Squid', 'Dante', 'Linux'
+                'Squid',
+                'Dante',
+                'Linux'
             ],
             'tags' => ['proxy', 'networking', 'devops'],
         ],
@@ -413,7 +467,9 @@ return [
             'solution' => 'Built REST APIs using Laravel/Lumen with SHA-256 based authentication.',
             'result' => 'Delivered secure and reliable API endpoints for production use.',
             'tech_stack' => [
-                'Laravel', 'Lumen', 'REST API'
+                'Laravel',
+                'Lumen',
+                'REST API'
             ],
             'tags' => ['api', 'security', 'backend'],
         ],
@@ -424,7 +480,8 @@ return [
             'solution' => 'Developed a voucher management module integrated into existing ERP workflows.',
             'result' => 'Improved financial tracking and reporting accuracy.',
             'tech_stack' => [
-                'Laravel 5.6', 'AdminLTE'
+                'Laravel 5.6',
+                'AdminLTE'
             ],
             'tags' => ['erp', 'backend'],
         ],
@@ -472,8 +529,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'ai_rules' => [
-        'max_case_studies' => 1,
-        'max_achievements' => 2,
+        'max_case_studies' => 3,
+        'max_achievements' => 3,
         'use_introduction_lines' => 1,
         'avoid_full_dump' => true,
     ],

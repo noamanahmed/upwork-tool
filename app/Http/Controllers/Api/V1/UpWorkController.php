@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\StoreUpWorkRequest;
 use App\Http\Requests\UpdateUpWorkRequest;
+use App\Models\AiJobProposal;
 use App\Models\Job;
 use App\Models\JobSearch;
 use App\Models\RssJobSearches;
@@ -114,8 +115,9 @@ class UpWorkController extends BaseController
             ]);
         }
 
+        $aiJobProposal = new AiJobProposal();
         // Not generated yet, create and dispatch
-        $aiJobProposal = \App\Models\AiJobProposal::create([
+        $aiJobProposal = $aiJobProposal->fill([
             'job_id' => $jobId,
             'status' => 'generating',
             'provider' => $provider,
@@ -124,9 +126,10 @@ class UpWorkController extends BaseController
             'proposal' => 'N/A',
         ]);
 
-        $aiJobProposal = $aiJobProposal->fresh(); // Refresh to get any default values or changes from the model
         $aiJobProposal->prompt = $aiJobProposal->getPromptText();
         $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
+
+        dd($aiJobProposal->toArray());
         $aiJobProposal->save();
 
         dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));

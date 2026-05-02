@@ -133,14 +133,14 @@ EOT;
         $jobText = strtolower($this->job->title . ' ' . $this->job->description);
 
         $skills = $this->selectRelevantSkills($config['skills'], $jobText);
-        $caseStudy = $this->selectCaseStudy($config['case_studies'], $jobText);
+        $caseStudies = $this->selectCaseStudies($config, $jobText);
         $achievements = $this->selectAchievements($config);
 
         return [
             'name' => $config['personal']['first_name'] . ' ' . $config['personal']['last_name'],
             'skills' => $this->formatSkills($skills),
             'achievements' => $this->formatAchievements($achievements),
-            'case_study' => $this->formatCaseStudy($caseStudy),
+            'case_study' => $this->formatCaseStudies($caseStudies),
         ];
     }
 
@@ -166,23 +166,55 @@ EOT;
         return $matched;
     }
 
-    protected function selectCaseStudy(array $caseStudies, string $jobText): ?array
+    protected function selectCaseStudies(array $config, string $jobText): array
     {
+        $caseStudies = $config['case_studies'];
+        $limit = $config['ai_rules']['max_case_studies'] ?? 3;
+        $matched = [];
+
         foreach ($caseStudies as $caseStudy) {
             foreach ($caseStudy['tags'] as $tag) {
                 if (Str::contains($jobText, Str::lower($tag))) {
-                    return $caseStudy;
+                    $matched[] = $caseStudy;
+                    break;
                 }
             }
         }
 
-        return null;
+        return array_slice($matched, 0, $limit);
     }
 
     protected function selectAchievements(array $config): array
     {
         $limit = $config['ai_rules']['max_achievements'] ?? 2;
-        return array_slice($config['achievements'], 0, $limit);
+        $jobText = strtolower($this->job->title . ' ' . $this->job->description);
+        $matched = [];
+
+        foreach ($config['achievements'] as $group => $items) {
+            $isRelevant = \Illuminate\Support\Str::contains($jobText, strtolower($group));
+
+            if (!$isRelevant && isset($config['job_type_mapping'])) {
+                foreach ($config['job_type_mapping'] as $keyword => $mappedCategories) {
+                    if (\Illuminate\Support\Str::contains($jobText, $keyword) && in_array($group, $mappedCategories)) {
+                        $isRelevant = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($isRelevant) {
+                $matched = array_merge($matched, $items);
+            }
+        }
+
+        // Fallback: if no specific group matched, gather all elements
+        if (empty($matched)) {
+            foreach ($config['achievements'] as $items) {
+                $matched = array_merge($matched, $items);
+            }
+        }
+
+        return array_slice(array_unique($matched), 0, $limit);
     }
 
     /*
@@ -210,19 +242,21 @@ EOT;
         return '- ' . implode("\n- ", $achievements);
     }
 
-    protected function formatCaseStudy(?array $caseStudy): string
+    protected function formatCaseStudies(array $caseStudies): string
     {
-        if (!$caseStudy) {
+        if (empty($caseStudies)) {
             return '';
         }
 
-        return <<<EOT
-Relevant Past Work:
-- {$caseStudy['title']}
-- Problem: {$caseStudy['problem']}
-- Solution: {$caseStudy['solution']}
-- Result: {$caseStudy['result']}
-EOT;
+        $formatted = "Relevant Past Work:\n";
+        foreach ($caseStudies as $caseStudy) {
+            $formatted .= "- {$caseStudy['title']}\n";
+            $formatted .= "  Problem: {$caseStudy['problem']}\n";
+            $formatted .= "  Solution: {$caseStudy['solution']}\n";
+            $formatted .= "  Result: {$caseStudy['result']}\n\n";
+        }
+
+        return rtrim($formatted);
     }
 
     /*

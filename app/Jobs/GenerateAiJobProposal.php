@@ -51,10 +51,10 @@ class GenerateAiJobProposal implements ShouldQueue
                 throw new \Exception("Job not found.");
             }
 
-
-            $promptText = $this->aiJobProposal->getPromptText();
+            $promptText = $this->aiJobProposal->prompt;
             $agent = app(\App\Ai\Agents\AiJobProposalAgent::class);
             $agent->setConversationId($this->aiJobProposal->conversation_id);
+            $agent->setInstructions($this->aiJobProposal->instructions);
 
             // Execute using the stored provider and model
             $response = $agent->prompt(
