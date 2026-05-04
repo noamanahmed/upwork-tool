@@ -43,9 +43,14 @@ class GenerateAiProposals extends Command
         $dispatchedCount = 0;
         foreach ($jobs as $job) {
             $existing = $job->aiProposals->where('provider', $provider)->first();
-            
-            if ($existing)
-                continue;
+
+            if ($existing) {
+                if ($existing->status === 'failed') {
+                    $existing->delete();
+                } else {
+                    continue;
+                }
+            }
 
             $aiJobProposal = \App\Models\AiJobProposal::create([
                 'job_id' => $job->id,

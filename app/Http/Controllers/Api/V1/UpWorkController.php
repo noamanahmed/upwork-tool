@@ -109,10 +109,14 @@ class UpWorkController extends BaseController
                 ]);
             }
 
-            return $this->upworkService->successfullApiResponse([
-                'message' => 'The AI proposal is currently being generated.',
-                'proposal' => $existingProposal
-            ]);
+            if ($existingProposal->status === 'failed') {
+                $existingProposal->delete();
+            } else {
+                return $this->upworkService->successfullApiResponse([
+                    'message' => 'The AI proposal is currently being generated.',
+                    'proposal' => $existingProposal
+                ]);
+            }
         }
 
         $aiJobProposal = new AiJobProposal();

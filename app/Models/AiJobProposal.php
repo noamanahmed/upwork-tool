@@ -6,6 +6,10 @@ use Illuminate\Support\Str;
 
 class AiJobProposal extends BaseModel
 {
+    protected $casts = [
+        'generated_at' => 'datetime',
+    ];
+
     protected $fillable = [
         'name',
         'job_id',
@@ -15,6 +19,7 @@ class AiJobProposal extends BaseModel
         'model',
         'conversation_id',
         'description',
+        'generated_at',
     ];
 
     /*

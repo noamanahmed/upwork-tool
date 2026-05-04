@@ -65,7 +65,8 @@ class GenerateAiJobProposal implements ShouldQueue
 
             $this->aiJobProposal->update([
                 'proposal' => (string) $response,
-                'status' => 'completed'
+                'status' => 'completed',
+                'generated_at' => now(),
             ]);
 
         } catch (\Exception $e) {
