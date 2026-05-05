@@ -87,22 +87,6 @@
 
         <!-- Header / Job Details -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            @php
-                $data = $job->getAdditonalData();
-                $clientName = $data['node.job.ownership.team.name'] ?? 'N/A';
-                $budget = $job->budget_minimum === $job->budget_maximum
-                    ? $job->budget_minimum . $job->getCurrencySymbol()
-                    : $job->budget_minimum . $job->getCurrencySymbol() . ' - ' . $job->budget_maximum . $job->getCurrencySymbol();
-                $jobType = $job->is_hourly ? 'HOURLY' : 'FIXED RATE';
-                $projectTotalApplicants = $data['node.totalApplicants'] ?? 'N/A';
-                $clientTotalHires = $data['node.client.totalHires'] ?? 'N/A';
-                $clientTotalSpend = $data['node.client.totalSpent.rawValue'] ?? 'N/A';
-                $clientTotalSpendCurrency = $data['node.client.totalSpent.currency'] ?? 'N/A';
-                $clientTotalReviews = $data['node.client.totalReviews'] ?? 'N/A';
-                $clientTotalFeedback = $data['node.client.totalFeedback'] ?? 'N/A';
-                $clientTotalPostedJobs = $data['node.client.totalPostedJobs'] ?? 'N/A';
-            @endphp
-
             <div class="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900 leading-tight mb-2">
@@ -125,6 +109,65 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Timeline Metrics -->
+            <div class="border-t border-gray-200 pt-6 mb-6">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Timeline</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @php
+                        $timeline = [
+                            'Job Posted (UpWork)' => $job->created_at,
+                            'Added to Platform' => $job->created_at,
+                            'Proposal Generation Queued' => $proposal->created_at ?? null,
+                            'Proposal Generated' => $proposal->generated_at ?? null,
+                        ];
+                    @endphp
+                    @foreach($timeline as $label => $date)
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div class="text-xs text-gray-500 mb-1">{{ $label }}</div>
+                            <div class="text-sm font-medium text-gray-800">
+                                {{ $date ? \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s') . ' (' . \Carbon\Carbon::parse($date)->diffForHumans() . ')' : 'N/A' }}
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- AI Configuration Section -->
+            <div class="border-t border-gray-200 pt-6 mb-6">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">AI Configuration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <div class="text-xs text-gray-500 mb-2">Model</div>
+                        <div class="text-sm font-medium text-gray-800">{{ $proposal->model ?? 'N/A' }}</div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <div class="text-xs text-gray-500 mb-2">Provider</div>
+                        <div class="text-sm font-medium text-gray-800 capitalize">{{ $proposal->provider ?? 'N/A' }}</div>
+                    </div>
+                    <div class="bg-gray-50 p--4 rounded-lg border border-gray-100">
+                        <div class="text-xs text-gray-500 mb-2">Conversation ID</div>
+                        <div class="text-sm font-medium text-gray-800">{{ $proposal->conversation_id ?? 'N/A' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Overview -->
+            @php
+                $data = $job->getAdditonalData();
+                $clientName = $data['node.job.ownership.team.name'] ?? 'N/A';
+                $budget = $job->budget_minimum === $job->budget_maximum
+                    ? $job->budget_minimum . $job->getCurrencySymbol()
+                    : $job->budget_minimum . $job->getCurrencySymbol() . ' - ' . $job->budget_maximum . $job->getCurrencySymbol();
+                $jobType = $job->is_hourly ? 'HOURLY' : 'FIXED RATE';
+                $projectTotalApplicants = $data['node.totalApplicants'] ?? 'N/A';
+                $clientTotalHires = $data['node.client.totalHires'] ?? 'N/A';
+                $clientTotalSpend = $data['node.client.totalSpent.rawValue'] ?? 'N/A';
+                $clientTotalSpendCurrency = $data['node.client.totalSpent.currency'] ?? 'N/A';
+                $clientTotalReviews = $data['node.client.totalReviews'] ?? 'N/A';
+                $clientTotalFeedback = $data['node.client.totalFeedback'] ?? 'N/A';
+                $clientTotalPostedJobs = $data['node.client.totalPostedJobs'] ?? 'N/A';
+            @endphp
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <!-- Job Overview -->
@@ -158,9 +201,61 @@
                 </div>
             </div>
 
+            <!-- Prompt & Instructions Accordion -->
+            <div class="border-t border-gray-200 pt-6 mb-6">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">AI Prompts & Instructions</h3>
+
+                <!-- Prompt Section -->
+                <details class="group bg-white rounded-lg border border-gray-200 shadow-sm mb-3 [&_summary::-webkit-details-marker]:hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 transition rounded-lg group-open:rounded-b-none">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                                </path>
+                            </svg>
+                            System Prompt (sent to AI)
+                        </span>
+                        <span class="transition group-open:rotate-180">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                                </path>
+                            </svg>
+                        </span>
+                    </summary>
+                    <div
+                        class="px-5 py-4 border-t border-gray-200 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50">
+                        {!! nl2br(e($proposal->prompt ?? 'N/A')) !!}
+                    </div>
+                </details>
+
+                <!-- Instructions Section -->
+                <details class="group bg-white rounded-lg border border-gray-200 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 transition rounded-lg group-open:rounded-b-none">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                </path>
+                            </svg>
+                            AI Instructions (behavior rules)
+                        </span>
+                        <span class="transition group-open:rotate-180">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                                </path>
+                            </svg>
+                        </span>
+                    </summary>
+                    <div
+                        class="px-5 py-4 border-t border-gray-200 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50">
+                        {!! nl2br(e($proposal->instructions ?? 'N/A')) !!}
+                    </div>
+                </details>
+            </div>
+
             <!-- Accordion for Job Description -->
-            <details
-                class="group bg-white rounded-lg border border-gray-200 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+            <details class="group bg-white rounded-lg border border-gray-200 shadow-sm mb-6 [&_summary::-webkit-details-marker]:hidden">
                 <summary
                     class="flex items-center justify-between p-4 cursor-pointer list-none font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 transition rounded-lg group-open:rounded-b-none">
                     <span class="flex items-center gap-2">
@@ -182,72 +277,86 @@
                     {!! e($job->description) !!}
                 </div>
             </details>
-        </div>
 
-        <!-- Proposal Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative min-h-[300px]">
-            <div class="border-b border-gray-100 bg-gray-50 px-6 py-4 flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-upwork" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    AI Generated Proposal
-                </h2>
-                <div id="status-badge"
-                    class="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600 shadow-inner">
-                    Initializing...
-                </div>
-            </div>
-
-            <div class="p-6">
-                <!-- Generating State -->
-                <div id="loading-state" class="flex flex-col mx-auto items-center justify-center py-12 text-center">
-                    <div class="loader mb-4"></div>
-                    <h3 class="text-gray-900 font-medium text-lg mb-1">Crafting the perfect proposal...</h3>
-                    <p class="text-gray-500 text-sm max-w-sm">Our AI agent is currently generating a highly tailored
-                        proposal based on your freelancer profile. This usually takes 10-20 seconds.</p>
-                </div>
-
-                <!-- Error State -->
-                <div id="error-state" class="hidden flex-col mx-auto items-center justify-center py-12 text-center">
-                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Proposal Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative min-h-[300px]">
+                <div class="border-b border-gray-100 bg-gray-50 px-6 py-4 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-upwork" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-                            </path>
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
+                        AI Generated Proposal
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <div id="status-badge"
+                            class="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600 shadow-inner">
+                            Initializing...
+                        </div>
+                        @if($proposal && $proposal->status === 'completed')
+                            <button id="regenerate-btn"
+                                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 transition"
+                                onclick="regenerateProposal()">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                                Regenerate
+                            </button>
+                        @endif
                     </div>
-                    <h3 class="text-gray-900 font-medium text-lg mb-1">Generation Failed</h3>
-                    <p id="error-message" class="text-red-500 text-sm max-w-sm"></p>
                 </div>
 
-                <!-- Completed State -->
-                <div id="completed-state" class="hidden">
-                    <div class="bg-gray-50 rounded-lg p-5 border border-gray-100">
-                        <div id="proposal-content" class="markdown-body text-gray-800"></div>
+                <div class="p-6">
+                    <!-- Generating State -->
+                    <div id="loading-state" class="flex flex-col mx-auto items-center justify-center py-12 text-center">
+                        <div class="loader mb-4"></div>
+                        <h3 class="text-gray-900 font-medium text-lg mb-1">Crafting the perfect proposal...</h3>
+                        <p class="text-gray-500 text-sm max-w-sm">Our AI agent is currently generating a highly tailored
+                            proposal based on your freelancer profile. This usually takes 10-20 seconds.</p>
                     </div>
 
-                    <div class="mt-6 flex justify-end">
-                        <button onclick="copyToClipboard()"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Error State -->
+                    <div id="error-state" class="hidden flex-col mx-auto items-center justify-center py-12 text-center">
+                        <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
                                 </path>
                             </svg>
-                            <span id="copy-text">Copy Proposal</span>
-                        </button>
+                        </div>
+                        <h3 class="text-gray-900 font-medium text-lg mb-1">Generation Failed</h3>
+                        <p id="error-message" class="text-red-500 text-sm max-w-sm"></p>
+                    </div>
+
+                    <!-- Completed State -->
+                    <div id="completed-state" class="hidden">
+                        <div class="bg-gray-50 rounded-lg p-5 border border-gray-100">
+                            <div id="proposal-content" class="markdown-body text-gray-800"></div>
+                        </div>
+
+                        <div class="mt-6 flex justify-end">
+                            <button onclick="copyToClipboard()"
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                <span id="copy-text">Copy Proposal</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
         const jobId = "{{ $job->id }}";
         const apiUrl = `/api/v1/upwork/job/${jobId}/generate-proposal`;
+        const regenerateUrl = `/api/v1/upwork/job/${jobId}/regenerate-proposal`;
         let proposalId = null;
         let pollInterval = null;
 
@@ -270,7 +379,6 @@
                         } else if (proposal.status === 'failed') {
                             showError(proposal.proposal || "The generation job failed internally.");
                         } else {
-                            // Generating / Pending
                             updateStatus('Generating...', 'bg-yellow-100 text-yellow-700');
                             startPolling();
                         }
@@ -304,7 +412,7 @@
                         }
                     })
                     .catch(err => console.error("Polling error", err));
-            }, 3000); // Check every 3 seconds
+            }, 3000);
         }
 
         function showProposal(markdownText) {
@@ -313,11 +421,7 @@
             document.getElementById('completed-state').classList.remove('hidden');
 
             updateStatus('Completed', 'bg-green-100 text-green-700');
-
-            // Parse Markdown
             document.getElementById('proposal-content').innerHTML = marked.parse(markdownText);
-
-            // For copying
             window.rawProposalText = markdownText;
         }
 
@@ -347,6 +451,57 @@
                     }, 2000);
                 });
             }
+        }
+
+        function regenerateProposal() {
+            if (!confirm('Are you sure you want to regenerate this proposal? The current one will be deleted.')) {
+                return;
+            }
+
+            const btn = document.getElementById('regenerate-btn');
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Regenerating...`;
+
+            fetch(regenerateUrl, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reset to generating state
+                        document.getElementById('completed-state').classList.add('hidden');
+                        document.getElementById('error-state').classList.add('hidden');
+                        document.getElementById('loading-state').classList.remove('hidden');
+
+                        proposalId = data.proposal.id;
+                        startGeneration();
+                    } else {
+                        showError(data.message || "Failed to regenerate proposal.");
+                        btn.disabled = false;
+                        btn.innerHTML = `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                </path>
+                            </svg>
+                            Regenerate`;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showError("Network error while regenerating proposal.");
+                    btn.disabled = false;
+                    btn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            </path>
+                        </svg>
+                        Regenerate`;
+                });
         }
     </script>
 </body>

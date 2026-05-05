@@ -87,6 +87,7 @@ Route::get('/upwork/proposals', [UpWorkController::class, 'proposals']);
 
 Route::get('/upwork/job/{jobId}/generate-proposal', [UpWorkController::class, 'generateProposal']);
 Route::get('/upwork/job/{jobId}/{aiJobProposal}', [UpWorkController::class, 'getAiJobProposal']);
+Route::post('/upwork/job/{jobId}/regenerate-proposal', [UpWorkController::class, 'regenerateProposal']);
 
 
 Route::get('/upwork/debug/slack', function () {

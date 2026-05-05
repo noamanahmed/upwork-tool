@@ -152,4 +152,44 @@ class UpWorkController extends BaseController
             'proposal' => $proposal
         ]);
     }
+
+    public function regenerateProposal($jobId, Request $request)
+    {
+        $job = Job::findOrFail($jobId);
+        $provider = config('services.ai.provider');
+        $modelName = config("services.ai.{$provider}.model");
+        $conversationId = config("services.ai.{$provider}.conversation_id");
+
+        if (empty($provider) || empty($modelName) || empty($conversationId)) {
+            return $this->upworkService->errorfullApiResponse([
+                'message' => 'Please configure AI provider, model, and conversation ID.'
+            ]);
+        }
+
+        // Delete any existing proposals for this job
+        \App\Models\AiJobProposal::where('job_id', $jobId)->delete();
+
+        // Create new proposal record
+        $aiJobProposal = new AiJobProposal();
+        $aiJobProposal = $aiJobProposal->fill([
+            'job_id' => $jobId,
+            'status' => 'generating',
+            'provider' => $provider,
+            'model' => $modelName,
+            'conversation_id' => $conversationId,
+            'proposal' => 'N/A',
+        ]);
+
+        $aiJobProposal->prompt = $aiJobProposal->getPromptText();
+        $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
+        $aiJobProposal->save();
+
+        // Dispatch job
+        dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
+
+        return $this->upworkService->successfullApiResponse([
+            'message' => 'Proposal regeneration initiated.',
+            'proposal' => $aiJobProposal->fresh()
+        ]);
+    }
 }
