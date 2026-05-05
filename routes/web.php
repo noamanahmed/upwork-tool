@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 
+Route::get('/jobs', [App\Http\Controllers\JobController::class, 'index'])->name('jobs.index');
+
 Route::get('/job/{jobId}/proposal', function ($jobId) {
     $job = \App\Models\Job::findOrFail($jobId);
     $provider = config('services.ai.provider');

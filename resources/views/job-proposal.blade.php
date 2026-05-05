@@ -48,18 +48,24 @@
 
     <!-- Header -->
     <div class="bg-white p-6 rounded-xl shadow border mb-6">
-        <h1 class="text-2xl font-bold mb-2">{{ $job->title }}</h1>
-
-        <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-500">
-                Posted {{ \Carbon\Carbon::parse($job->created_at)->diffForHumans() }}
-            </span>
-
-            <a href="https://www.upwork.com/jobs/~{{ $job->ciphertext }}"
-               target="_blank"
-               class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-                View Job
-            </a>
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">{{ $job->title }}</h1>
+                <span class="text-sm text-gray-500">
+                    Posted {{ \Carbon\Carbon::parse($job->created_at)->diffForHumans() }}
+                </span>
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ route('jobs.index') }}"
+                   class="px-4 py-2 text-sm border rounded-lg hover:bg-gray-100 transition">
+                    ← Back to Jobs
+                </a>
+                <a href="https://www.upwork.com/jobs/~{{ $job->ciphertext }}"
+                   target="_blank"
+                   class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                    View on Upwork
+                </a>
+            </div>
         </div>
     </div>
 
