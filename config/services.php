@@ -36,6 +36,9 @@ return [
     'ai' => [
         'provider' => env('AI_PROVIDER', 'openai'),
         'rate_limit' => env('AI_RATE_LIMIT', 5),
+        'rate_limit_interval' => env('AI_RATE_LIMIT_INTERVAL', 60),
+        'max_parallel_requests' => env('AI_MAX_PARALLEL_REQUESTS', null),
+        'parallel_request_timeout' => env('AI_PARALLEL_REQUEST_TIMEOUT', 60),
         'openai' => [
             'key' => env('OPENAI_API_KEY'),
             'model' => env('OPENAI_MODEL', 'gpt-4'),
