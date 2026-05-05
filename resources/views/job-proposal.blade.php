@@ -105,7 +105,7 @@
 
     <div class="bg-white p-6 rounded-xl shadow border mb-6">
         <h2 class="text-lg font-semibold mb-4">Job Overview</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <ul class="space-y-2 text-sm text-gray-600">
                     <li><span class="text-gray-500 w-32 inline-block">Job Type:</span>
@@ -130,6 +130,22 @@
                     <li><span class="text-gray-500 w-32 inline-block">Total Spend:</span>
                         <strong class="text-gray-800">{{ $clientTotalSpendCurrency }} {{ $clientTotalSpend }}</strong>
                     </li>
+                    <li><span class="text-gray-500 w-32 inline-block">Posted Jobs:</span>
+                        <strong class="text-gray-800">{{ $clientTotalPostedJobs }}</strong>
+
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li><span class="text-gray-500 w-32 inline-block">Client Hires:</span>
+                        <strong class="text-gray-800">{{ $clientTotalHires }}</strong>
+                    </li>
+                    <li><span class="text-gray-500 w-32 inline-block">Client Reviews:</span>
+                        <strong class="text-gray-800">{{ $clientTotalReviews }}</strong>
+                    </li>
+                    <li><span class="text-gray-500 w-32 inline-block">Client Feedback:</span>
+                        <strong class="text-gray-800">{{ $clientTotalFeedback }}</strong>
                 </ul>
             </div>
         </div>
