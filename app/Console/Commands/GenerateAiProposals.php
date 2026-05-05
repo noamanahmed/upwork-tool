@@ -42,12 +42,20 @@ class GenerateAiProposals extends Command
         $jobs = \App\Models\Job::where('created_at', '>=', now()->subHours($hours))->with('aiProposals')->get();
         $dispatchedCount = 0;
         foreach ($jobs as $job) {
+            // Prevent multiple concurrent generation jobs for the same Upwork job
+            $hasGenerating = $job->aiProposals->where('provider', $provider)->contains('status', 'generating');
+            if ($hasGenerating) {
+                $this->info("Skipping job #{$job->id}: proposal generation already in progress.");
+                continue;
+            }
+
             $existing = $job->aiProposals->where('provider', $provider)->first();
 
             if ($existing) {
                 if ($existing->status === 'failed') {
                     $existing->delete();
                 } else {
+                    $this->info("Skipping job #{$job->id}: proposal already exists for provider {$provider}.");
                     continue;
                 }
             }
