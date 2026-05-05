@@ -2,8 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Models\AiJobProposal;
+use App\Models\Job;
+use App\Ai\Agents\AiJobProposalAgent;
+use Exception;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -16,165 +19,173 @@ class GenerateAiJobProposal implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * The maximum number of unhandled exceptions to allow before failing.
+     * Retry attempts
      */
     public $tries = 3;
 
     /**
-     * The number of seconds to wait before retrying a failed job.
+     * Retry delay (seconds)
      */
     public $backoff = 15;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(
-        public \App\Models\AiJobProposal $aiJobProposal
-    ) {
-    }
+        public AiJobProposal $aiJobProposal
+    ) {}
 
     public function handle(): void
     {
         $provider = $this->aiJobProposal->provider;
         $apiKey = config("services.ai.{$provider}.key", 'unknown');
 
-        // Key for rate limiting (per provider + api key)
-        $rateLimitKey = 'generate_ai_proposal_' . $provider . '_' . md5($apiKey);
-        $rateLimit = (int) config('services.ai.rate_limit', 5);
-        $rateLimitInterval = (int) config('services.ai.rate_limit_interval', 60);
+        // Redis Keys (isolated per provider + key)
+        $rateLimitKey = "ai_rate:{$provider}:" . md5($apiKey);
+        $semaphoreKey = "ai_parallel:{$provider}";
 
-        // Key for concurrency/parallel control (global across all providers)
-        $semaphoreKey = 'generate_ai_proposal_semaphore';
-        $maxParallel = (int) config('services.ai.max_parallel_requests', 0);
-        $semaphoreTimeout = (int) config('services.ai.parallel_request_timeout', 60);
+        // Config
+        $rateLimit = (int) config('services.ai.rate_limit', 5);              // e.g. 5 requests
+        $interval  = (int) config('services.ai.rate_limit_interval', 60);    // per 60 seconds
+        $maxParallel = (int) config('services.ai.max_parallel_requests', 3); // concurrent requests
 
-        // Step 1: Check concurrency limit if enabled
-        if ($maxParallel > 0) {
-            $acquired = $this->acquireSemaphore($semaphoreKey, $maxParallel, $semaphoreTimeout);
-
-            if (!$acquired) {
-                // Could not acquire semaphore within timeout - too many parallel requests
-                $this->reQueueJob('parallel_limit_exceeded');
-                return;
-            }
+        // STEP 1: Acquire parallel slot
+        if (!$this->acquireSemaphore($semaphoreKey, $maxParallel)) {
+            $this->reQueueJob('parallel_limit_exceeded');
+            return;
         }
 
-
-        // Step 2: Apply rate limiting (requests per interval)
-        Redis::throttle($rateLimitKey)
-            ->block(0)->allow($rateLimit)->every($rateLimitInterval)
-            ->then(function () {
-                $this->processProposal();
-            }, function () {
-                // Could not obtain lock; push the job back onto the queue
+        try {
+            // STEP 2: Apply rate limiting
+            if (!$this->acquireRateLimit($rateLimitKey, $rateLimit, $interval)) {
                 $this->reQueueJob('rate_limit_exceeded');
-            });
+                return;
+            }
+
+            // STEP 3: Process job
+            $this->processProposal();
+
+        } finally {
+            // STEP 4: Always release semaphore
+            $this->releaseSemaphore($semaphoreKey);
+        }
     }
 
     /**
-     * Acquire a semaphore lock for concurrency control.
-     *
-     * @param string $key Redis key for the semaphore
-     * @param int $maxConcurrent Max concurrent executions allowed
-     * @param int $timeout Seconds to wait before giving up
-     * @return bool Whether semaphore was acquired
+     * Sliding window rate limiter using Redis ZSET
      */
-    protected function acquireSemaphore(string $key, int $maxConcurrent, int $timeout): bool
+    protected function acquireRateLimit(string $key, int $limit, int $interval): bool
     {
-        $startTime = time();
         $redis = Redis::connection();
+        $now = microtime(true);
 
-        while(true){
-            # code...
-        
-            // Atomically increment and get current count
-            $current = $redis->incr($key);
+        // Remove expired entries
+        $redis->zremrangebyscore($key, 0, $now - $interval);
 
-            if ($current <= $maxConcurrent) {
-                // Successfully acquired - set expiry as safety net
-                if ($current === 1) {
-                    // Only set expiry on first acquire
-                    $redis->expire($key, $timeout);
-                }
-                return true;
-            }
+        // Count current requests
+        $count = $redis->zcard($key);
 
-            // Limit exceeded - rollback our increment
-            $redis->decr($key);
-
-            // Check if we've exceeded timeout
-            if ((time() - $startTime) >= $timeout) {
-                return false;
-            }
-
-            // Wait a bit before retrying
-            usleep(500000); // 500ms
+        if ($count >= $limit) {
+            return false;
         }
 
-        return false;
+        // Add current request
+        $redis->zadd($key, [$now => $now]);
+
+        // Ensure TTL
+        $redis->expire($key, $interval);
+
+        return true;
     }
 
+    /**
+     * Acquire semaphore (limit concurrent requests)
+     */
+    protected function acquireSemaphore(string $key, int $max): bool
+    {
+        $redis = Redis::connection();
+
+        $current = $redis->incr($key);
+
+        if ($current > $max) {
+            $redis->decr($key);
+            return false;
+        }
+
+        // Prevent deadlocks (worker crash safety)
+        $redis->expire($key, 60);
+
+        return true;
+    }
+
+    /**
+     * Release semaphore safely
+     */
+    protected function releaseSemaphore(string $key): void
+    {
+        $redis = Redis::connection();
+
+        try {
+            if ($redis->get($key) > 0) {
+                $redis->decr($key);
+            }
+        } catch (Exception $e) {
+            Log::warning('Semaphore release failed', [
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Main AI processing logic
+     */
     protected function processProposal(): void
     {
         try {
-            $jobId = $this->aiJobProposal->job_id;
-            $job = \App\Models\Job::find($jobId);
+            $job = Job::find($this->aiJobProposal->job_id);
 
             if (!$job) {
-                throw new \Exception("Job not found.");
+                throw new Exception("Job not found.");
             }
 
-            $promptText = $this->aiJobProposal->prompt;
-            $agent = app(\App\Ai\Agents\AiJobProposalAgent::class);
+            $agent = app(AiJobProposalAgent::class);
             $agent->setConversationId($this->aiJobProposal->conversation_id);
             $agent->setInstructions($this->aiJobProposal->instructions);
 
-            // Execute using the stored provider and model
             $response = $agent->prompt(
-                prompt: $promptText,
+                prompt: $this->aiJobProposal->prompt,
                 provider: $this->aiJobProposal->provider,
                 model: $this->aiJobProposal->model
             );
 
             $this->aiJobProposal->update([
-                'proposal' => (string) $response,
-                'status' => 'completed',
+                'proposal'     => (string) $response,
+                'status'       => 'completed',
                 'generated_at' => now(),
             ]);
 
-            // Release semaphore if concurrency limiting is enabled
-            if ((int) config('services.ai.max_parallel_requests', 0) > 0) {
-                Redis::connection()->decr('generate_ai_proposal_semaphore');
-            }
-
-        } catch (\Exception $e) {
-            // Release semaphore if concurrency limiting is enabled
-            if ((int) config('services.ai.max_parallel_requests', 0) > 0) {
-                Redis::connection()->decr('generate_ai_proposal_semaphore');
-            }
-
+        } catch (Exception $e) {
             $this->aiJobProposal->update([
-                'status' => 'failed',
-                'proposal' => 'Error generating proposal: ' . $e->getMessage()
+                'status'   => 'failed',
+                'proposal' => 'Error generating proposal: ' . $e->getMessage(),
             ]);
 
             throw $e;
         }
-           
     }
 
-    public function reQueueJob(string $reason = 'unknown',$context = [])
+    /**
+     * Re-dispatch job with delay
+     */
+    protected function reQueueJob(string $reason = 'unknown', array $context = []): void
     {
-        Log::info('GenerateAiJobProposal requeued', [
+        Log::info('GenerateAiJobProposal requeued', array_merge([
             'reason' => $reason,
             'provider' => $this->aiJobProposal->provider,
             'ai_job_proposal_id' => $this->aiJobProposal->id,
-            'context' => $context   
-        ]);
+        ], $context));
 
-        static::dispatch($this->aiJobProposal)->delay(now()->addSeconds(10));
+        static::dispatch($this->aiJobProposal)
+            ->delay(now()->addSeconds(10));
 
-        // Delete the current job instance so it doesn't "fail" or "retry"
         $this->delete();
     }
 }
