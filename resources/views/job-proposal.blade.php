@@ -155,85 +155,136 @@
     </div>
 
 
-    <!-- Job Description -->
-    <div class="bg-white p-6 rounded-xl shadow border mb-6">
-        <h2 class="text-lg font-semibold mb-4">Job Description</h2>
-        <div class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded">
-            {{ $job->description }}
-        </div>
-    </div>
-
-    <!-- Proposal Section -->
-    <div class="bg-white rounded-xl shadow border overflow-hidden">
-
-        <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-            <h2 class="font-semibold">AI Proposal</h2>
-
-            <div class="flex items-center gap-3">
-                <div id="status-badge" class="px-3 py-1 text-xs rounded bg-gray-200">
-                    Initializing...
-                </div>
-
-                @if($proposal && $proposal->status === 'completed')
-                    <button id="regenerate-btn"
-                            onclick="regenerateProposal()"
-                            class="px-3 py-1 text-sm border rounded hover:bg-gray-100">
-                        Regenerate
-                    </button>
-                @endif
-            </div>
-        </div>
-
-        <div class="p-6">
-
-            <!-- Loading -->
-            <div id="loading-state" class="text-center py-12">
-                <div class="loader mx-auto mb-4"></div>
-                <p id="loading-text" class="text-gray-500">Initializing AI...</p>
-            </div>
-
-            <!-- Error -->
-            <div id="error-state" class="hidden text-center py-12">
-                <p id="error-message" class="text-red-500"></p>
-            </div>
-
-            <!-- Success -->
-            <div id="completed-state" class="hidden">
-                <div id="proposal-content" class="markdown-body"></div>
-
-                <div class="mt-4 text-right">
-                    <button onclick="copyToClipboard()"
-                            class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">
-                        <span id="copy-text">Copy</span>
-                    </button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-
-    <!-- Prompts & Instructions -->
-    @if($proposal)
+    <!-- Job Description Accordion -->
     <div class="bg-white rounded-xl shadow border mb-6">
-        <div class="px-6 py-4 border-b bg-gray-50">
-            <h2 class="font-semibold">AI Prompts & Instructions</h2>
-        </div>
-        <div class="p-6 space-y-4">
-            <!-- Prompt -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">System Prompt</h3>
-                <pre class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $proposal->prompt ?? 'N/A' }}</pre>
+        <details class="group [&_summary::-webkit-details-marker]:hidden">
+            <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none font-semibold bg-gray-50 hover:bg-gray-100 transition rounded-t-xl">
+                <span class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    Job Description
+                </span>
+                <span class="transition group-open:rotate-180">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                        </path>
+                    </svg>
+                </span>
+            </summary>
+            <div class="px-6 py-4 border-t bg-white">
+                <div class="text-sm text-gray-700 whitespace-pre-wrap">
+                    {{ $job->description }}
+                </div>
             </div>
+        </details>
+    </div>
 
-            <!-- Instructions -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">Instructions</h3>
-                <pre class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $proposal->instructions ?? 'N/A' }}</pre>
+    <!-- AI Proposal Accordion -->
+    @if($proposal)
+    <div class="bg-white rounded-xl shadow border overflow-hidden mb-6">
+        <details class="group [&_summary::-webkit-details-marker]:hidden" open>
+            <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none font-semibold bg-gray-50 hover:bg-gray-100 transition rounded-t-xl">
+                <span class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-upwork" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    AI Proposal
+                </span>
+                <span class="transition group-open:rotate-180">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                        </path>
+                    </svg>
+                </span>
+            </summary>
+            <div class="p-6 bg-white">
+                <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50 -mx-6 -mt-6">
+                    <h2 class="font-semibold">Current Proposal</h2>
+                    <div class="flex items-center gap-3">
+                        <div id="status-badge" class="px-3 py-1 text-xs rounded bg-gray-200">
+                            Initializing...
+                        </div>
+                        @if($proposal && $proposal->status === 'completed')
+                            <button id="regenerate-btn"
+                                    onclick="regenerateProposal()"
+                                    class="px-3 py-1 text-sm border rounded hover:bg-gray-100">
+                                Regenerate
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <!-- Loading -->
+                    <div id="loading-state" class="text-center py-12">
+                        <div class="loader mx-auto mb-4"></div>
+                        <p id="loading-text" class="text-gray-500">Initializing AI...</p>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="error-state" class="hidden text-center py-12">
+                        <p id="error-message" class="text-red-500"></p>
+                    </div>
+
+                    <!-- Success -->
+                    <div id="completed-state" class="hidden">
+                        <div id="proposal-content" class="markdown-body"></div>
+
+                        <div class="mt-4 text-right">
+                            <button onclick="copyToClipboard()"
+                                    class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">
+                                <span id="copy-text">Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </details>
     </div>
     @endif
+
+    <!-- AI Prompts & Instructions Accordion -->
+    @if($proposal)
+    <div class="bg-white rounded-xl shadow border mb-6">
+        <details class="group [&_summary::-webkit-details-marker]:hidden">
+            <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none font-semibold bg-gray-50 hover:bg-gray-100 transition rounded-t-xl">
+                <span class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                        </path>
+                    </svg>
+                    AI Prompts & Instructions
+                </span>
+                <span class="transition group-open:rotate-180">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                        </path>
+                    </svg>
+                </span>
+            </summary>
+            <div class="px-6 py-4 border-t bg-white space-y-6">
+                <!-- Prompt -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">System Prompt</h3>
+                    <pre class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $proposal->prompt ?? 'N/A' }}</pre>
+                </div>
+
+                <!-- Instructions -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">AI Instructions</h3>
+                    <pre class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $proposal->instructions ?? 'N/A' }}</pre>
+                </div>
+            </div>
+        </details>
+    </div>
+    @endif
+
+
 
 </div>
 
@@ -282,11 +333,32 @@ function showProposal(markdown) {
 
     updateStatus('Completed', 'bg-green-100 text-green-700');
     window.rawProposalText = markdown;
+
+    // Show regenerate button
+    const btn = document.getElementById('regenerate-btn');
+    if (btn) btn.classList.remove('hidden');
+}
+
+function showError(message) {
+    document.getElementById('loading-state').classList.add('hidden');
+    document.getElementById('completed-state').classList.add('hidden');
+    document.getElementById('error-state').classList.remove('hidden');
+
+    updateStatus('Failed', 'bg-red-100 text-red-700');
+    document.getElementById('error-message').innerText = message;
+
+    // Show regenerate button for retry
+    const btn = document.getElementById('regenerate-btn');
+    if (btn) btn.classList.remove('hidden');
 }
 
 /* ---------------------- FLOW ---------------------- */
 
 function startGeneration() {
+    // Hide regenerate button during generation
+    const btn = document.getElementById('regenerate-btn');
+    if (btn) btn.classList.add('hidden');
+
     showLoading('Requesting AI...');
     updateStatus('Queued', 'bg-blue-100 text-blue-700');
 
@@ -342,6 +414,10 @@ function startPolling() {
 function regenerateProposal() {
     if (!confirm('Regenerate proposal?')) return;
 
+    // Hide regenerate button during regeneration
+    const btn = document.getElementById('regenerate-btn');
+    if (btn) btn.classList.add('hidden');
+
     showLoading('Regenerating...');
     updateStatus('Queued', 'bg-blue-100 text-blue-700');
 
@@ -353,7 +429,11 @@ function regenerateProposal() {
             proposalId = data.proposal.id;
             startPolling();
         })
-        .catch(() => showError("Regeneration failed."));
+        .catch(() => {
+            showError("Regeneration failed.");
+            // Show button again on error
+            if (btn) btn.classList.remove('hidden');
+        });
 }
 
 function copyToClipboard() {
