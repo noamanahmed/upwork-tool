@@ -148,7 +148,7 @@ class UpWorkController extends BaseController
         $proposal = \App\Models\AiJobProposal::where('job_id', $jobId)
             ->findOrFail($aiJobProposalId);
 
-        return $this->successfullApiResponse([
+        return $this->upworkService->successfullApiResponse([
             'proposal' => $proposal
         ]);
     }
