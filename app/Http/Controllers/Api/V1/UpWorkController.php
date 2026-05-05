@@ -157,8 +157,8 @@ class UpWorkController extends BaseController
     {
         $job = Job::findOrFail($jobId);
         $provider = config('services.ai.provider');
-        $modelName = config("services.ai.{$provider}.model");
-        $conversationId = config("services.ai.{$provider}.conversation_id");
+        $modelName = config("services.ai.{$provider}.model", 'gpt-4');
+        $conversationId = config("services.ai.{$provider}.conversation_id", 'openai');
 
         if (empty($provider) || empty($modelName) || empty($conversationId)) {
             return $this->upworkService->errorfullApiResponse([
@@ -166,8 +166,10 @@ class UpWorkController extends BaseController
             ]);
         }
 
-        // Delete any existing proposals for this job
-        \App\Models\AiJobProposal::where('job_id', $jobId)->delete();
+        // Delete any existing proposals for this job and provider
+        \App\Models\AiJobProposal::where('job_id', $jobId)
+            ->where('provider', $provider)
+            ->delete();
 
         // Create new proposal record
         $aiJobProposal = new AiJobProposal();

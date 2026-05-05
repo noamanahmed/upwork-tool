@@ -16,5 +16,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/job/{jobId}/proposal', function ($jobId) {
     $job = \App\Models\Job::findOrFail($jobId);
-    return view('job-proposal', compact('job'));
+    $provider = config('services.ai.provider');
+    $proposal = $job->aiProposals()
+        ->where('provider', $provider)
+        ->orderByDesc('created_at')
+        ->first();
+    return view('job-proposal', compact('job', 'proposal'));
 })->name('job.proposal');
