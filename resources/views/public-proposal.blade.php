@@ -114,9 +114,25 @@
 
                     <!-- Success -->
                     <div id="completed-state">
-                        <div id="proposal-content" class="markdown-body" onload="document.getElementById('proposal-content').innerHTML = DOMPurify.sanitize(marked.parse(markdown));">
+                        <div id="proposal-content" class="markdown-body">
                             {{ $proposal->proposal  ?? 'No proposal content available.' }}
                         </div>
+                        <script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    const rawMarkdown = `{!! addslashes($proposal->proposal) !!}`;
+
+    // Step 1: Convert Markdown → HTML
+    const parsedHtml = marked.parse(rawMarkdown);
+
+    // Step 2: Sanitize HTML
+    const cleanHtml = DOMPurify.sanitize(parsedHtml);
+
+    // Step 3: Inject into DOM
+    document.getElementById('proposal-content').innerHTML = cleanHtml;
+
+});
+</script>
 
                         <div class="mt-4 text-right">
                             <button onclick="copyToClipboard()"
