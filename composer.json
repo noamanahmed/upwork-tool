@@ -14,9 +14,11 @@
         "laravel/octane": "^2.4",
         "laravel/sanctum": "^4.0",
         "laravel/scout": "^10.10",
+        "laravel/socialite": "^5.27",
         "laravel/telescope": "^5.0",
         "laravel/tinker": "^2.11",
         "league/flysystem-aws-s3-v3": "^3.25",
+        "socialiteproviders/auth0": "^4.2",
         "spatie/laravel-permission": "^6.4",
         "spatie/laravel-query-builder": "^6.0",
         "upwork/php-upwork-oauth2": "^2.5"

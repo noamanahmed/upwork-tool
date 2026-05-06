@@ -50,4 +50,13 @@ return [
             'conversation_id' => env('GEMINI_CONVERSATION_ID', 'gemini')
         ]
     ],
+
+    'auth0' => [
+        'domain' => env('AUTH0_DOMAIN'),
+        'client_id' => env('AUTH0_CLIENT_ID'),
+        'client_secret' => env('AUTH0_CLIENT_SECRET'),
+        'base_url' => env('AUTH0_BASE_URL'),
+        'redirect' => env('AUTH0_REDIRECT_URI', 'http://localhost:10999/login/auth0/callback'),
+        'audience' => env('AUTH0_AUDIENCE'),
+    ],
 ];

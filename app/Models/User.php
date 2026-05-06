@@ -46,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail,CanResetPassword
         'email_verification_sent_at',
         'employer_id',
         'description',
+        'is_verified',
     ];
 
     /**
@@ -66,7 +67,8 @@ class User extends Authenticatable implements MustVerifyEmail,CanResetPassword
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'working_hours' => 'array'
+        'working_hours' => 'array',
+        'is_verified' => 'boolean',
     ];
 
     public function settings()

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\ResourceRegistrar as BaseResourceRegistrar;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 
 class AppServiceProvider extends ServiceProvider
@@ -51,6 +52,10 @@ class AppServiceProvider extends ServiceProvider
             if($header === 'en') $header = 'en-USA';
             $language = Language::where('code',$header)->firstOrFail();
             return $language->translations;
+        });
+
+        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
+            $event->extendSocialite('auth0', \SocialiteProviders\Auth0\Provider::class);
         });
         
 
