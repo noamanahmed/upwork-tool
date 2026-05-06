@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Crypt;
 
 class Job extends BaseModel
 {
@@ -66,8 +67,16 @@ class Job extends BaseModel
         $text .= "\n";
         $text .= '*Job Link*  :' . 'https://www.upwork.com/jobs/' . $job->ciphertext;
         $text .= "\n";
-        $text .= '*Proposal Link*  :' . route('job.proposal', ['jobId' => $job->id]);
+        $text .= '*Proposal Link (Login Required)*  :' . route('job.proposal', ['jobId' => $job->id]);
         $text .= "\n";
+
+        // Public proposal link (24h temporary)
+        $publicUrl = $job->getPublicProposalUrl();
+        if ($publicUrl) {
+            $text .= '*Public Proposal Link (24h)*  :' . $publicUrl;
+            $text .= "\n";
+        }
+
         return $text;
     }
 
@@ -106,5 +115,30 @@ class Job extends BaseModel
     public function aiProposals()
     {
         return $this->hasMany(AiJobProposal::class);
+    }
+
+    /**
+     * Get a temporary public proposal URL (valid 24 hours).
+     */
+    public function getPublicProposalUrl(): string
+    {
+        $provider = config('services.ai.provider');
+        $proposal = $this->aiProposals()
+            ->where('provider', $provider)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (!$proposal) {
+            return '';
+        }
+
+        $payload = [
+            'job_id' => $this->id,
+            'proposal_id' => $proposal->id,
+            'expires_at' => now()->addHours(24)->timestamp,
+        ];
+
+        $encrypted = Crypt::encryptString(json_encode($payload));
+        return url("/public/proposal/{$encrypted}");
     }
 }

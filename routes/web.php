@@ -21,6 +21,9 @@ Route::get('/login/auth0', [AuthController::class, 'redirectToAuth0'])->name('au
 Route::get('/login/auth0/callback', [AuthController::class, 'handleAuth0Callback'])->name('auth0.callback');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Public Proposal (temporary signed link, 24h)
+Route::get('/public/proposal/{token}', [App\Http\Controllers\PublicProposalController::class, 'show'])->name('public.proposal');
+
 // Jobs Routes (protected: authenticated + verified)
 Route::middleware(['auth', 'verified.user'])->group(function () {
     Route::get('/jobs', [JobController::class, 'index'])->name('jobs.index');
