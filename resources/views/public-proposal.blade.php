@@ -114,7 +114,9 @@
 
                     <!-- Success -->
                     <div id="completed-state">
-                        <div id="proposal-content" class="markdown-body"></div>
+                        <div id="proposal-content" class="markdown-body">
+                            {{ $proposal->proposal  ?? 'No proposal content available.' }}
+                        </div>
 
                         <div class="mt-4 text-right">
                             <button onclick="copyToClipboard()"
@@ -124,14 +126,14 @@
                         </div>
                     </div>
                     @endif
-                                            <!-- Loading -->
+                    @if($proposal && $proposal->status === 'generating')                                                                <!-- Loading -->
                     <div id="loading-state" class="text-center py-12">
                         <div class="loader mx-auto mb-4"></div>
                         <p id="loading-text" class="text-gray-500">Initializing AI...</p>
                     </div>
-
+                    @endif
                     <!-- Error -->
-                    <div id="error-state" class="hidden text-center py-12">
+                    <div id="error-state" class="text-center py-12">
                         <p id="error-message" class="text-red-500"></p>
                     </div>
 
