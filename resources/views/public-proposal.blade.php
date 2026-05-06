@@ -63,6 +63,79 @@
         </div>
     </div>
 
+    <!-- Job Description Accordion -->
+    <div class="bg-white rounded-xl shadow border mb-6">
+        <details class="group [&_summary::-webkit-details-marker]:hidden">
+            <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none font-semibold bg-gray-50 hover:bg-gray-100 transition rounded-t-xl">
+                <span class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    Job Description
+                </span>
+                <span class="transition group-open:rotate-180">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                        </path>
+                    </svg>
+                </span>
+            </summary>
+            <div class="px-6 py-4 border-t bg-white">
+                <div class="text-sm text-gray-700 whitespace-pre-wrap">
+                    {{ $job->description }}
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <div class="bg-white rounded-xl shadow border overflow-hidden mb-6">
+        <details class="group [&_summary::-webkit-details-marker]:hidden" open>
+            <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none font-semibold bg-gray-50 hover:bg-gray-100 transition rounded-t-xl">
+                <span class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-upwork" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    AI Proposal
+                </span>
+                <span class="transition group-open:rotate-180">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                        </path>
+                    </svg>
+                </span>
+            </summary>
+            <div class="p-6 bg-white">
+
+                <div class="mt-6">
+                    <!-- Loading -->
+                    <div id="loading-state" class="text-center py-12">
+                        <div class="loader mx-auto mb-4"></div>
+                        <p id="loading-text" class="text-gray-500">Initializing AI...</p>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="error-state" class="hidden text-center py-12">
+                        <p id="error-message" class="text-red-500"></p>
+                    </div>
+
+                    <!-- Success -->
+                    <div id="completed-state" class="hidden">
+                        <div id="proposal-content" class="markdown-body"></div>
+
+                        <div class="mt-4 text-right">
+                            <button onclick="copyToClipboard()"
+                                    class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">
+                                <span id="copy-text">Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </details>
+    </div>
     <!-- Proposal -->
     <div class="bg-white rounded-xl shadow border overflow-hidden mb-6">
         <div class="px-6 py-4 border-b bg-gray-50">

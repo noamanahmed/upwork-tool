@@ -70,7 +70,7 @@ class Job extends BaseModel
         $text .= '*Proposal Link (Login Required)*  :' . route('job.proposal', ['jobId' => $job->id]);
         $text .= "\n";
 
-        // Public proposal link (24h temporary)
+        // Public proposal link (24h temporary, no proposal ID in URL)
         $publicUrl = $job->getPublicProposalUrl();
         if ($publicUrl) {
             $text .= '*Public Proposal Link (24h)*  :' . $publicUrl;
@@ -119,23 +119,15 @@ class Job extends BaseModel
 
     /**
      * Get a temporary public proposal URL (valid 24 hours).
+     * URL contains only job identifier - proposal is fetched server-side.
      */
     public function getPublicProposalUrl(): string
     {
-        $provider = config('services.ai.provider');
-        $proposal = $this->aiProposals()
-            ->where('provider', $provider)
-            ->orderByDesc('created_at')
-            ->first();
-
-        if (!$proposal) {
-            return '';
-        }
-
         $payload = [
             'job_id' => $this->id,
-            'proposal_id' => $proposal->id,
             'expires_at' => now()->addHours(24)->timestamp,
+            // Add HMAC signature to prevent tampering
+            'signature' => hash_hmac('sha256', $this->id . now()->addHours(24)->timestamp, config('app.key')),
         ];
 
         $encrypted = Crypt::encryptString(json_encode($payload));
