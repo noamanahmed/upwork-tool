@@ -110,7 +110,21 @@
             <div class="p-6 bg-white">
 
                 <div class="mt-6">
-                    <!-- Loading -->
+                    @if($proposal && $proposal->status === 'completed')
+
+                    <!-- Success -->
+                    <div id="completed-state">
+                        <div id="proposal-content" class="markdown-body"></div>
+
+                        <div class="mt-4 text-right">
+                            <button onclick="copyToClipboard()"
+                                    class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">
+                                <span id="copy-text">Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    @endif
+                                            <!-- Loading -->
                     <div id="loading-state" class="text-center py-12">
                         <div class="loader mx-auto mb-4"></div>
                         <p id="loading-text" class="text-gray-500">Initializing AI...</p>
@@ -121,39 +135,9 @@
                         <p id="error-message" class="text-red-500"></p>
                     </div>
 
-                    <!-- Success -->
-                    <div id="completed-state" class="hidden">
-                        <div id="proposal-content" class="markdown-body"></div>
-
-                        <div class="mt-4 text-right">
-                            <button onclick="copyToClipboard()"
-                                    class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">
-                                <span id="copy-text">Copy</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </details>
-    </div>
-    <!-- Proposal -->
-    <div class="bg-white rounded-xl shadow border overflow-hidden mb-6">
-        <div class="px-6 py-4 border-b bg-gray-50">
-            <h2 class="font-semibold">AI Generated Proposal</h2>
-        </div>
-        <div class="p-6">
-            @if($proposal->status === 'completed')
-                <div id="proposal-content" class="markdown-body"></div>
-                <script>
-                    document.getElementById('proposal-content').innerHTML =
-                        DOMPurify.sanitize(marked.parse(@json($proposal->proposal)));
-                </script>
-            @else
-                <div class="text-center py-12 text-gray-500">
-                    This proposal is still being generated. Please check back later.
-                </div>
-            @endif
-        </div>
     </div>
 
     <!-- AI Configuration -->
