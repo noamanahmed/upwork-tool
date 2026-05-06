@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Job;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Api\V1\BaseController;
+use Illuminate\Routing\Controller;
 
-class JobController extends BaseController
+class JobController extends Controller
 {
     /**
      * Display a paginated list of all jobs with sorting.
@@ -25,13 +25,15 @@ class JobController extends BaseController
             'budget_maximum',
             'location',
             'is_hourly',
+            'applicants',
+            'client_name',
+            'total_spend',
+            'proposal_status',
+            'client_total_posted_jobs',
+            'client_total_hires',
+            'client_total_reviews',
+            'client_total_feedback',
         ];
-
-        // Also allow sorting on computed/related fields via joins or raw expressions
-        $allowedSorts[] = 'applicants';
-        $allowedSorts[] = 'client_name';
-        $allowedSorts[] = 'total_spend';
-        $allowedSorts[] = 'proposal_status';
 
         if (!in_array($sortBy, $allowedSorts)) {
             $sortBy = 'created_at';
@@ -64,46 +66,71 @@ class JobController extends BaseController
                 $query->orderBy('is_hourly', $sortDir);
                 break;
             case 'applicants':
-                // Sort by totalApplicants from JSON data
                 $query->orderByRaw("
-                    CASE 
-                        WHEN JSON_VALID(jobs.json) THEN 
-                            CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.totalApplicants')) AS UNSIGNED)
-                        ELSE 0 
-                    END {$sortDir}
+                    COALESCE(
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.totalApplicants')) AS UNSIGNED),
+                        0
+                    ) {$sortDir}, jobs.id {$sortDir}
                 ");
                 break;
             case 'client_name':
-                // Sort by client name from JSON
                 $query->orderByRaw("
-                    CASE 
-                        WHEN JSON_VALID(jobs.json) THEN 
-                            JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.job.ownership.team.name'))
-                        ELSE ''
-                    END {$sortDir}
+                    COALESCE(
+                        JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.job.ownership.team.name')),
+                        ''
+                    ) {$sortDir}, jobs.id {$sortDir}
                 ");
                 break;
             case 'total_spend':
-                // Sort by total spend raw value
                 $query->orderByRaw("
-                    CASE 
-                        WHEN JSON_VALID(jobs.json) THEN 
-                            CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.client.totalSpent.rawValue')) AS UNSIGNED)
-                        ELSE 0 
-                    END {$sortDir}
+                    COALESCE(
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.client.totalSpent.rawValue')) AS DECIMAL(10,2)),
+                        0
+                    ) {$sortDir}, jobs.id {$sortDir}
+                ");
+                break;
+            case 'client_total_posted_jobs':
+                $query->orderByRaw("
+                    COALESCE(
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.client.totalPostedJobs')) AS UNSIGNED),
+                        0
+                    ) {$sortDir}, jobs.id {$sortDir}
+                ");
+                break;
+            case 'client_total_hires':
+                $query->orderByRaw("
+                    COALESCE(
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.client.totalHires')) AS UNSIGNED),
+                        0
+                    ) {$sortDir}, jobs.id {$sortDir}
+                ");
+                break;
+            case 'client_total_reviews':
+                $query->orderByRaw("
+                    COALESCE(
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.client.totalReviews')) AS UNSIGNED),
+                        0
+                    ) {$sortDir}, jobs.id {$sortDir}
+                ");
+                break;
+            case 'client_total_feedback':
+                $query->orderByRaw("
+                    COALESCE(
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(jobs.json, '$.node.client.totalFeedback')) AS UNSIGNED),
+                        0
+                    ) {$sortDir}, jobs.id {$sortDir}
                 ");
                 break;
             case 'proposal_status':
-                // Sort by latest proposal status
-                $query->leftJoin('ai_job_proposals as latest_proposal', function ($join) {
-                    $join->on('jobs.id', '=', 'latest_proposal.job_id')
-                         ->whereRaw('latest_proposal.id = (
-                             SELECT id FROM ai_job_proposals ap 
-                             WHERE ap.job_id = jobs.id 
-                             ORDER BY created_at DESC LIMIT 1
-                         )');
-                });
-                $query->orderBy('latest_proposal.status', $sortDir);
+                // Sort by latest proposal status using subquery
+                $query->orderBySub(function($q) use ($sortDir) {
+                    $q->select('status')
+                      ->from('ai_job_proposals')
+                      ->whereColumn('job_id', 'jobs.id')
+                      ->orderByDesc('created_at')
+                      ->limit(1);
+                }, $sortDir);
+                $query->orderBy('jobs.created_at', 'desc'); // Secondary sort
                 break;
         }
 

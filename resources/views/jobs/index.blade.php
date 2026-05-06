@@ -33,19 +33,41 @@
             <table class="w-full text-sm text-left">
                 <thead class="bg-gray-50 text-gray-600 font-medium border-b">
                     <tr>
-                        <th class="px-4 py-3">Job Title</th>
-                        <th class="px-4 py-3">Status</th>
-                        <th class="px-4 py-3">Type</th>
-                        <th class="px-4 py-3">Budget</th>
-                        <th class="px-4 py-3">Applicants</th>
-                        <th class="px-4 py-3">Client</th>
-                        <th class="px-4 py-3">Location</th>
-                        <th class="px-4 py-3">Spend</th>
-                        <th class="px-4 py-3">Posted Jobs</th>
-                        <th class="px-4 py-3">Hires</th>
-                        <th class="px-4 py-3">Reviews</th>
-                        <th class="px-4 py-3">Feedback</th>
-                        <th class="px-4 py-3">Posted</th>
+                        @php
+                            $headers = [
+                                ['label' => 'Job Title', 'sort' => 'title'],
+                                ['label' => 'Status', 'sort' => 'proposal_status'],
+                                ['label' => 'Type', 'sort' => 'is_hourly'],
+                                ['label' => 'Budget', 'sort' => 'budget_minimum'],
+                                ['label' => 'Applicants', 'sort' => 'applicants'],
+                                ['label' => 'Client', 'sort' => 'client_name'],
+                                ['label' => 'Location', 'sort' => 'location'],
+                                ['label' => 'Spend', 'sort' => 'total_spend'],
+                                ['label' => 'Posted Jobs', 'sort' => 'client_total_posted_jobs'],
+                                ['label' => 'Hires', 'sort' => 'client_total_hires'],
+                                ['label' => 'Reviews', 'sort' => 'client_total_reviews'],
+                                ['label' => 'Feedback', 'sort' => 'client_total_feedback'],
+                                ['label' => 'Posted', 'sort' => 'created_at'],
+                            ];
+                        @endphp
+
+                        @foreach($headers as $header)
+                            @php
+                                $isSorted = $sortBy === $header['sort'];
+                                $nextDir = $isSorted && $sortDir === 'asc' ? 'desc' : 'asc';
+                                $icon = $isSorted ? ($sortDir === 'asc' ? '↑' : '↓') : '↕';
+                                $query = array_merge(request()->query(), ['sort' => $header['sort'], 'dir' => $nextDir]);
+                            @endphp
+                            <th class="px-4 py-3">
+                                <a href="{{ route('jobs.index', $query) }}"
+                                   class="flex items-center gap-1 hover:text-gray-900 transition"
+                                   title="Sort by {{ $header['label'] }}">
+                                    <span>{{ $header['label'] }}</span>
+                                    <span class="text-xs">{{ $icon }}</span>
+                                </a>
+                            </th>
+                        @endforeach
+
                         <th class="px-4 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
