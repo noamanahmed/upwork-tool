@@ -41,14 +41,10 @@ class AiJobProposal extends BaseModel
     {
         $job = $this->getJobDetails();
         $context = $this->buildContext();
+        $insights = $this->extractJobInsights();
 
         return <<<EOT
 Write a highly tailored Upwork proposal for the following job.
-
-IMPORTANT:
-- Use ONLY relevant information from provided context
-- Do not dump all skills or experience
-- Focus on solving the client’s problem
 
 =====================
 JOB DETAILS
@@ -59,6 +55,11 @@ Title:
 
 Description:
 {$job['description']}
+
+=====================
+JOB INSIGHTS
+=====================
+{$insights}
 
 =====================
 FREELANCER CONTEXT
@@ -75,11 +76,20 @@ Key Achievements:
 {$context['case_study']}
 
 =====================
+IMPORTANT CONTEXT USAGE RULES
+=====================
+- Use at most 2 skills, only if directly relevant
+- Use EXACTLY 1 achievement as proof (turn it into a result)
+- Use at most 1 case study, only if it closely matches the problem
+- Do NOT mention everything
+- Prioritize relevance over completeness
+
+=====================
 INSTRUCTIONS
 =====================
-- Pick only what is relevant
 - Keep it concise and sharp
-- Focus on results and confidence
+- Focus on solving the client’s problem
+- Highlight risk or consequence if done wrong
 
 EOT;
     }
@@ -87,42 +97,48 @@ EOT;
     public function getModelInstructions(): string
     {
         return <<<EOT
-You are an expert Upwork proposal writer focused on HIGH-CONVERSION technical proposals.
+You are a senior developer writing a HIGH-CONVERSION Upwork proposal.
 
-CRITICAL RULES:
+Your goal is NOT to sound impressive.
+Your goal is to make the client feel: "This person understands my exact problem."
 
-1. FIRST LINE = HOOK
-- First line must grab attention (max 30–40 words)
-- No greetings
-- Directly address problem or show confidence
+STEP 1: UNDERSTAND THE JOB
 
-2. HUMAN STYLE
-- Write like a real developer
-- Simple, natural English
-- No fluff, no buzzwords
+Extract silently:
+- Real problem (not what client says, what they mean)
+- What is likely broken or missing
+- What matters most (speed, reliability, UX, cost)
 
-3. PRECISION
-- Use ONLY relevant context provided
-- Do NOT list all skills
-- Do NOT repeat job description
+STEP 2: WRITE THE PROPOSAL
 
-4. STRUCTURE
-- Hook
-- Show understanding
-- Explain approach (technical but brief)
-- Add 1 strong proof (achievement or case study)
-- End with simple CTA
+1. HOOK (max 25 words)
+- Call out exact problem or risk
+- No greeting
 
-5. LENGTH
-- 150–250 words
-- Short paragraphs
+2. UNDERSTANDING (2–3 lines)
+- Rephrase problem simply
 
-6. EDGE
-- Add 1 technical insight OR ask 1 smart question
+3. APPROACH (3–5 lines)
+- Practical steps only
+- No buzzwords
 
-GOAL:
-Client should feel:
-"This developer understands my problem and knows how to solve it."
+4. PROOF (1–2 lines)
+- Use ONE strong result
+
+5. EDGE
+- Either ask 1 smart question OR highlight 1 hidden risk
+
+6. CTA (1 line)
+
+HARD CONSTRAINTS:
+- No generic phrases
+- No long sentences
+- No lists
+- Max 220 words
+
+REJECTION RULE:
+If this proposal can be reused for another job, DO NOT generate it.
+Rewrite until it feels specific to this job.
 
 EOT;
     }
@@ -135,11 +151,13 @@ EOT;
     protected function buildContext(): array
     {
         $config = config('admin');
-        $jobText = strtolower($this->job->title . ' ' . $this->job->description);
+        $jobText = $this->normalizeKeywords(
+            strtolower($this->job->title . ' ' . $this->job->description)
+        );
 
         $skills = $this->selectRelevantSkills($config['skills'], $jobText);
         $caseStudies = $this->selectCaseStudies($config, $jobText);
-        $achievements = $this->selectAchievements($config);
+        $achievements = $this->selectAchievements($config, $jobText);
 
         return [
             'name' => $config['personal']['first_name'] . ' ' . $config['personal']['last_name'],
@@ -147,6 +165,32 @@ EOT;
             'achievements' => $this->formatAchievements($achievements),
             'case_study' => $this->formatCaseStudies($caseStudies),
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Keyword Normalization
+    |--------------------------------------------------------------------------
+    */
+    protected function normalizeKeywords(string $text): string
+    {
+        $map = [
+            'api' => ['api', 'rest', 'integration'],
+            'frontend' => ['frontend', 'ui', 'ux'],
+            'backend' => ['backend', 'server', 'database'],
+            'performance' => ['slow', 'optimize', 'performance'],
+            'bug' => ['bug', 'fix', 'issue', 'error'],
+        ];
+
+        foreach ($map as $key => $variants) {
+            foreach ($variants as $variant) {
+                if (Str::contains($text, $variant)) {
+                    $text .= ' ' . $key;
+                }
+            }
+        }
+
+        return $text;
     }
 
     /*
@@ -174,7 +218,8 @@ EOT;
     protected function selectCaseStudies(array $config, string $jobText): array
     {
         $caseStudies = $config['case_studies'];
-        $limit = $config['ai_rules']['max_case_studies'] ?? 3;
+        $limit = $config['ai_rules']['max_case_studies'] ?? 1;
+
         $matched = [];
 
         foreach ($caseStudies as $caseStudy) {
@@ -189,37 +234,47 @@ EOT;
         return array_slice($matched, 0, $limit);
     }
 
-    protected function selectAchievements(array $config): array
+    protected function selectAchievements(array $config, string $jobText): array
     {
-        $limit = $config['ai_rules']['max_achievements'] ?? 2;
-        $jobText = strtolower($this->job->title . ' ' . $this->job->description);
+        $limit = $config['ai_rules']['max_achievements'] ?? 1;
         $matched = [];
 
         foreach ($config['achievements'] as $group => $items) {
-            $isRelevant = \Illuminate\Support\Str::contains($jobText, strtolower($group));
-
-            if (!$isRelevant && isset($config['job_type_mapping'])) {
-                foreach ($config['job_type_mapping'] as $keyword => $mappedCategories) {
-                    if (\Illuminate\Support\Str::contains($jobText, $keyword) && in_array($group, $mappedCategories)) {
-                        $isRelevant = true;
-                        break;
-                    }
-                }
-            }
-
-            if ($isRelevant) {
+            if (Str::contains($jobText, strtolower($group))) {
                 $matched = array_merge($matched, $items);
             }
         }
 
-        // Fallback: if no specific group matched, gather all elements
-        if (empty($matched)) {
-            foreach ($config['achievements'] as $items) {
-                $matched = array_merge($matched, $items);
-            }
+        // Safer fallback (only top general)
+        if (empty($matched) && isset($config['achievements']['general'])) {
+            $matched[] = $config['achievements']['general'][0];
         }
 
         return array_slice(array_unique($matched), 0, $limit);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Insights (NEW)
+    |--------------------------------------------------------------------------
+    */
+    protected function extractJobInsights(): string
+    {
+        $text = strtolower($this->job->title . ' ' . $this->job->description);
+
+        $urgency = Str::contains($text, ['urgent', 'asap', 'immediately'])
+            ? 'High'
+            : 'Normal';
+
+        $risk = Str::contains($text, ['bug', 'fix', 'error'])
+            ? 'Existing system instability'
+            : 'Potential implementation mismatch';
+
+        $goal = Str::contains($text, ['mvp', 'build'])
+            ? 'Build working solution quickly'
+            : 'Improve or fix existing system';
+
+        return "- Urgency: {$urgency}\n- Risk: {$risk}\n- Goal: {$goal}";
     }
 
     /*
@@ -233,18 +288,17 @@ EOT;
             return 'N/A';
         }
 
-        $output = '';
-
-        foreach ($skills as $group => $items) {
-            $output .= ucfirst($group) . ': ' . implode(', ', array_unique($items)) . "\n";
+        $flat = [];
+        foreach ($skills as $items) {
+            $flat = array_merge($flat, $items);
         }
 
-        return trim($output);
+        return implode(', ', array_unique($flat));
     }
 
     protected function formatAchievements(array $achievements): string
     {
-        return '- ' . implode("\n- ", $achievements);
+        return implode("\n", $achievements);
     }
 
     protected function formatCaseStudies(array $caseStudies): string
@@ -253,15 +307,10 @@ EOT;
             return '';
         }
 
-        $formatted = "Relevant Past Work:\n";
-        foreach ($caseStudies as $caseStudy) {
-            $formatted .= "- {$caseStudy['title']}\n";
-            $formatted .= "  Problem: {$caseStudy['problem']}\n";
-            $formatted .= "  Solution: {$caseStudy['solution']}\n";
-            $formatted .= "  Result: {$caseStudy['result']}\n\n";
-        }
+        $case = $caseStudies[0];
 
-        return rtrim($formatted);
+        return "Relevant Past Work:\n" .
+            "- {$case['title']} → {$case['result']}";
     }
 
     /*
