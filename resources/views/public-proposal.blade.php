@@ -114,7 +114,7 @@
 
                     <!-- Success -->
                     <div id="completed-state">
-                        <div id="proposal-content" class="markdown-body">
+                        <div id="proposal-content" class="markdown-body" onload="document.getElementById('proposal-content').innerHTML = DOMPurify.sanitize(marked.parse(markdown));">
                             {{ $proposal->proposal  ?? 'No proposal content available.' }}
                         </div>
 
