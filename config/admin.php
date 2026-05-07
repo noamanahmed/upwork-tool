@@ -16,6 +16,7 @@ return [
         'country' => 'Pakistan',
         'title' => 'Senior Full Stack Developer / Architect',
         'experience_years' => 8,
+        'timezone' => 'Asia/Karachi',
     ],
 
     /*

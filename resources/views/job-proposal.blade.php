@@ -127,11 +127,15 @@
                     'Queue Triggered' => $proposal?->created_at,
                     'Generated' => $proposal?->generated_at,
                 ];
+                $adminTimezone = config('admin.personal.timezone','UTC');                
             @endphp
             <ul class="space-y-2 text-sm text-gray-600">
-            @foreach($timeline as $label => $date)                
+            @foreach($timeline as $label => $date)
+                @php
+                    $carbonDate = $date ? \Carbon\Carbon::parse($date)->timezone($adminTimezone) : null;
+                @endphp
                     <li><span class="text-gray-500 w-32 inline-block">{{ $label }}:</span>
-                        <strong class="text-gray-800">{{ $date ? \Carbon\Carbon::parse($date)->format('Y-m-d H:i') . ' (' . \Carbon\Carbon::parse($date)->diffForHumans() . ')' : 'N/A' }}</strong>
+                        <strong class="text-gray-800">{{ $carbonDate ? $carbonDate->format('Y-m-d H:i') . ' (' . $carbonDate->diffForHumans() . ')' : 'N/A' }}</strong>
                     </li>
                 @endforeach
                 </ul>

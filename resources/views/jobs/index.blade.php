@@ -148,7 +148,8 @@
                             </td>
                             <td class="px-4 py-3">
                                 <span class="text-gray-500 text-xs">
-                                    {{ $job->created_at->format('Y-m-d H:i') }}
+                                    @php $adminTimezone = config('admin.personal.timezone','UTC'); @endphp
+                                    {{ $job->created_at->timezone($adminTimezone)->format('Y-m-d H:i') }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">

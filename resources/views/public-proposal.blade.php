@@ -23,11 +23,12 @@
 
 <div class="max-w-4xl mx-auto px-4 py-8">
 
-    <!-- Header -->
+     <!-- Header -->
     <div class="bg-white p-6 rounded-xl shadow border mb-6">
         <h1 class="text-2xl font-bold mb-2">{{ $job->title }}</h1>
         <div class="text-sm text-gray-500">
-            Proposal generated on {{ $proposal->generated_at?->format('Y-m-d H:i') ?? $proposal->created_at->format('Y-m-d H:i') }}
+            @php $adminTimezone = config('admin.personal.timezone','UTC'); @endphp
+            Proposal generated on {{ $proposal->generated_at?->timezone($adminTimezone)->format('Y-m-d H:i') ?? $proposal->created_at?->timezone($adminTimezone)->format('Y-m-d H:i') }}
         </div>
     </div>
 
