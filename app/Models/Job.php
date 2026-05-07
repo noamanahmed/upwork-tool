@@ -117,6 +117,11 @@ class Job extends BaseModel
         return $this->hasMany(AiJobProposal::class);
     }
 
+    public function agentConversation()
+    {
+        return $this->hasOne(AiAgentConversation::class);
+    }
+
     /**
      * Get a temporary public proposal URL (valid 24 hours).
      * URL contains only job identifier - proposal is fetched server-side.

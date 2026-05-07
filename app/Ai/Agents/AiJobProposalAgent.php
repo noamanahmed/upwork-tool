@@ -11,7 +11,7 @@ use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
 use Stringable;
 
-class AiJobProposalAgent implements Agent, Conversational, HasTools
+class AiJobProposalAgent implements Agent
 {
     use Promptable;
 
@@ -38,25 +38,4 @@ class AiJobProposalAgent implements Agent, Conversational, HasTools
         return $this->instructionsText ?? app(AiJobProposal::class)->getModelInstructions();
     }
 
-    /**
-     * Get the list of messages comprising the conversation so far.
-     *
-     * @return Message[]
-     */
-    public function messages(): iterable
-    {
-        // Concept of conversation_id allows sending job data to a specific context
-        // This will be expanded later or intercepted by the provider Gateway
-        return [];
-    }
-
-    /**
-     * Get the tools available to the agent.
-     *
-     * @return Tool[]
-     */
-    public function tools(): iterable
-    {
-        return [];
-    }
 }
