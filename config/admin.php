@@ -10,7 +10,7 @@ return [
     'personal' => [
         'first_name' => 'Nauman',
         'last_name' => 'Ahmed',
-        'date_of_birth' => null, // optional
+        'date_of_birth' => '1992-10-31', // optional
         'city' => 'Lahore',
         'state' => 'Punjab',
         'country' => 'Pakistan',
@@ -27,6 +27,8 @@ return [
     'introduction' => [
         'I am a Full Stack Developer with 8+ years of experience building scalable applications.',
         'I specialize in Laravel, Vue.js, and backend system architecture.',
+        'I have also worked extensively on performance optimization, infrastructure setup, and complex API integrations.',
+        'WordPress development is another area of expertise, with experience managing 2000+ sites and building custom plugins/themes.',
         'I focus on performance optimization, API development, and solving complex technical problems.',
         'I have hands-on experience with AWS, Kubernetes, Docker, and CI/CD pipelines.',
     ],
