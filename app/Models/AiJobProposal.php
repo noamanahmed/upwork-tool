@@ -90,6 +90,7 @@ INSTRUCTIONS
 - Keep it concise and sharp
 - Focus on solving the client’s problem
 - Highlight risk or consequence if done wrong
+- Donot ouput in Markdown format, plain text only
 
 EOT;
     }
