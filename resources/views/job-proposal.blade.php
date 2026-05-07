@@ -69,29 +69,6 @@
         </div>
     </div>
 
-    <!-- Timeline Metrics -->
-    <div class="bg-white p-6 rounded-xl shadow border mb-6">
-        <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Timeline</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            @php
-                $timeline = [
-                    'Job Posted' => $job->created_at,
-                    'Added to Platform' => $job->created_at,
-                    'Queue Triggered' => $proposal?->created_at,
-                    'Generated' => $proposal?->generated_at,
-                ];
-            @endphp
-            @foreach($timeline as $label => $date)
-                <div class="timeline-card">
-                    <span class="timeline-label">{{ $label }}</span>
-                    <div class="timeline-value">
-                        {{ $date ? \Carbon\Carbon::parse($date)->format('Y-m-d H:i') . ' (' . \Carbon\Carbon::parse($date)->diffForHumans() . ')' : 'N/A' }}
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-
     <!-- Job Overview -->
     @php
         $data = $job->getAdditonalData();
@@ -111,7 +88,7 @@
 
     <div class="bg-white p-6 rounded-xl shadow border mb-6">
         <h2 class="text-lg font-semibold mb-4">Job Overview</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-[1fr_1fr_2fr] gap-2">
             <div>
                 <ul class="space-y-2 text-sm text-gray-600">
                     <li><span class="text-gray-500 w-32 inline-block">Job Type:</span>
@@ -143,38 +120,25 @@
                 </ul>
             </div>
             <div>
-                <ul class="space-y-2 text-sm text-gray-600">
-                    <li><span class="text-gray-500 w-32 inline-block">Client Hires:</span>
-                        <strong class="text-gray-800">{{ $clientTotalHires }}</strong>
+                 @php
+                $timeline = [
+                    'Job Posted' => $job->created_at,
+                    'Added to Platform' => $job->created_at,
+                    'Queue Triggered' => $proposal?->created_at,
+                    'Generated' => $proposal?->generated_at,
+                ];
+            @endphp
+            <ul class="space-y-2 text-sm text-gray-600">
+            @foreach($timeline as $label => $date)                
+                    <li><span class="text-gray-500 w-32 inline-block">{{ $label }}:</span>
+                        <strong class="text-gray-800">{{ $date ? \Carbon\Carbon::parse($date)->format('Y-m-d H:i') . ' (' . \Carbon\Carbon::parse($date)->diffForHumans() . ')' : 'N/A' }}</strong>
                     </li>
-                    <li><span class="text-gray-500 w-32 inline-block">Client Reviews:</span>
-                        <strong class="text-gray-800">{{ $clientTotalReviews }}</strong>
-                    </li>
-                    <li><span class="text-gray-500 w-32 inline-block">Client Feedback:</span>
-                        <strong class="text-gray-800">{{ $clientTotalFeedback }}</strong>
+                @endforeach
                 </ul>
             </div>
         </div>
     </div>
 
-    <!-- AI Configuration -->
-    <div class="bg-white p-6 rounded-xl shadow border mb-6">
-        <h2 class="text-lg font-semibold mb-4">AI Configuration</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-                <span class="text-gray-500 block mb-1">Model</span>
-                <span class="font-medium">{{ $proposal?->model ?? 'N/A' }}</span>
-            </div>
-            <div>
-                <span class="text-gray-500 block mb-1">Provider</span>
-                <span class="font-medium capitalize">{{ $proposal?->provider ?? 'N/A' }}</span>
-            </div>
-            <div>
-                <span class="text-gray-500 block mb-1">Conversation ID</span>
-                <span class="font-medium">{{ $proposal?->conversation_id ?? 'N/A' }}</span>
-            </div>
-        </div>
-    </div>
 
 
     <!-- Job Description Accordion -->
@@ -268,6 +232,26 @@
         </details>
     </div>
     @endif
+
+
+    <!-- AI Configuration -->
+    <div class="bg-white p-6 rounded-xl shadow border mb-6">
+        <h2 class="text-lg font-semibold mb-4">AI Configuration</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+                <span class="text-gray-500 block mb-1">Model</span>
+                <span class="font-medium">{{ $proposal?->model ?? 'N/A' }}</span>
+            </div>
+            <div>
+                <span class="text-gray-500 block mb-1">Provider</span>
+                <span class="font-medium capitalize">{{ $proposal?->provider ?? 'N/A' }}</span>
+            </div>
+            <div>
+                <span class="text-gray-500 block mb-1">Conversation ID</span>
+                <span class="font-medium">{{ $proposal?->conversation_id ?? 'N/A' }}</span>
+            </div>
+        </div>
+    </div>
 
     <!-- AI Prompts & Instructions Accordion -->
     @if($proposal)
