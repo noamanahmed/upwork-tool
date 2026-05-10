@@ -351,6 +351,26 @@ NUMBER OF PROPOSALS TO GENERATE
 ==================================================
 - Generate 5 unique proposals with different hooks, approaches, and proofs.
 
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+--- Proposal 1 ---
+{Proposal Text}
+------------------
+
+
+--- Proposal 2 ---
+{Proposal Text}
+------------------
+
+
+--- Proposal 3 ---
+{Proposal Text}
+------------------
+
+
 EOT;
     }
 
