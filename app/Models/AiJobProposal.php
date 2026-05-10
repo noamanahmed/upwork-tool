@@ -38,13 +38,25 @@ class AiJobProposal extends BaseModel
     |--------------------------------------------------------------------------
     */
     public function getPromptText(): string
-    {
-        $job = $this->getJobDetails();
-        $context = $this->buildContext();
-        $insights = $this->extractJobInsights();
+{
+    $job = $this->getJobDetails();
+    $context = $this->buildContext();
+    $insights = $this->extractJobInsights();
 
-        return <<<EOT
+    return <<<EOT
 Write a highly tailored Upwork proposal for the following job.
+
+The proposal must feel:
+- highly specific
+- practical
+- trustworthy
+- written after carefully reading the entire job post
+
+The proposal must NOT feel:
+- generic
+- reusable
+- AI-generated
+- like a resume dump
 
 =====================
 JOB DETAILS
@@ -59,87 +71,285 @@ Description:
 =====================
 JOB INSIGHTS
 =====================
+
 {$insights}
+
 
 =====================
 FREELANCER CONTEXT
 =====================
 
-Name: {$context['name']}
+Name:
+{$context['name']}
 
 Relevant Skills:
 {$context['skills']}
 
-Key Achievements:
+Key Achievement:
 {$context['achievements']}
+
+Relevant Experience:
+{$context['experience']}
+
+Relevant Certification:
+{$context['certifications']}
 
 {$context['case_study']}
 
 =====================
-IMPORTANT CONTEXT USAGE RULES
+CONTEXT PRIORITY RULES
 =====================
-- Use at most 2 skills, only if directly relevant
-- Use EXACTLY 1 achievement as proof (turn it into a result)
-- Use at most 1 case study, only if it closely matches the problem
-- Do NOT mention everything
-- Prioritize relevance over completeness
+
+The goal is NOT to mention the most information.
+
+The goal is to include only information that increases trust for THIS exact project.
+
+--------------------------------------------------
+CLIENT REQUIREMENTS HAVE HIGHEST PRIORITY
+--------------------------------------------------
+
+If the client explicitly asks for:
+- examples
+- timeline
+- pricing
+- process
+- experience
+- deliverables
+- availability
+- requirements to begin
+
+You MUST answer those directly.
+
+Missing requested information is considered proposal failure.
+
+--------------------------------------------------
+SKILLS
+--------------------------------------------------
+
+- Mention only skills directly related to the actual work
+- Prefer technologies explicitly mentioned in the job description
+- Default to 2 highly relevant skills
+- You may include more ONLY if:
+  - the project clearly spans multiple responsibilities
+  - multiple technologies are central to execution
+  - additional skills increase implementation confidence
+
+Avoid unnecessary tech-stack dumping.
+
+Bad:
+Laravel, Vue.js, AWS, Docker, Redis, Kubernetes
+
+Good:
+Elementor, WooCommerce, Porto theme customization
+
+--------------------------------------------------
+ACHIEVEMENTS
+--------------------------------------------------
+
+- Use EXACTLY ONE achievement
+- The achievement must support the client’s primary concern
+- Convert achievements into practical proof/results
+- Prefer measurable outcomes
+
+Good:
+Managed and maintained 2000+ WordPress websites.
+
+Bad:
+I am highly experienced and passionate.
+
+--------------------------------------------------
+CASE STUDIES
+--------------------------------------------------
+
+- Use at most ONE case study
+- Only include it if it closely matches:
+  - the business type
+  - the technical stack
+  - the implementation challenge
+
+Do NOT force unrelated case studies.
+
+The case study should feel like:
+"I solved a very similar problem before."
+
+--------------------------------------------------
+EXPERIENCE
+--------------------------------------------------
+
+- Mention only highly relevant experience
+- Avoid resume-style summaries
+- Focus on execution confidence, not career history
+
+--------------------------------------------------
+CERTIFICATIONS
+--------------------------------------------------
+
+- Mention certifications only if they meaningfully increase trust
+- Ignore certifications for simple projects where execution matters more
+
+--------------------------------------------------
+RELEVANCE FILTER
+--------------------------------------------------
+
+Before mentioning any skill, achievement, experience, or certification, ask:
+
+"Does this increase confidence for THIS exact project?"
+
+If not, do NOT include it.
+
+--------------------------------------------------
+ANTI-GENERIC RULE
+--------------------------------------------------
+
+Every sentence must feel connected to:
+- this client
+- this project
+- this stack
+- this business goal
+- this implementation challenge
+
+If the proposal can be reused for another job, rewrite it.
 
 =====================
-INSTRUCTIONS
+OUTPUT REQUIREMENTS
 =====================
+
+- First analzye the job and context silently, and understand what client is requiring and what matters most to them.
 - Keep it concise and sharp
-- Focus on solving the client’s problem
-- Highlight risk or consequence if done wrong
-- Donot ouput in Markdown format, plain text only
+- Focus on solving the client’s actual problem
+- Highlight risks, mistakes, or implementation issues where relevant
+- Use natural human language
+- No buzzwords
+- No fluff
+- No markdown
+- Plain text only
+- Maximum 220 words
+- Short paragraphs preferred
+- Do not use bullet spam
+- Sound like a senior engineer, not a salesperson
 
 EOT;
-    }
+}
 
     public function getModelInstructions(): string
     {
         return <<<EOT
-You are a senior developer writing a HIGH-CONVERSION Upwork proposal.
+You are a senior developer writing HIGH-CONVERSION Upwork proposals.
 
 Your goal is NOT to sound impressive.
-Your goal is to make the client feel: "This person understands my exact problem."
 
-STEP 1: UNDERSTAND THE JOB
+Your goal is:
+1. Make the client feel understood
+2. Follow ALL application instructions exactly
+3. Remove any doubt that you actually read the job
 
-Extract silently:
-- Real problem (not what client says, what they mean)
-- What is likely broken or missing
-- What matters most (speed, reliability, UX, cost)
+==================================================
+STEP 1 — UNDERSTAND THE JOB
+==================================================
 
-STEP 2: WRITE THE PROPOSAL
+Silently extract:
 
-1. HOOK (max 25 words)
-- Call out exact problem or risk
+- The real technical problem
+- What is likely broken, risky, or missing
+- What matters most:
+  speed, UX, reliability, launch quality, communication, or budget
+
+Also identify:
+
+- Explicit application requirements
+- Questions the client asked
+- Deliverables the client requested in proposal
+- Screening instructions
+- Required pricing/timeline details
+
+==================================================
+STEP 2 — PRIORITIZE REQUIREMENTS
+==================================================
+
+If the client explicitly asks for:
+- examples
+- timeline
+- pricing
+- experience
+- process
+- deliverables
+- required information
+
+You MUST answer ALL of them.
+
+Missing requested information is considered proposal failure.
+
+The proposal should feel:
+- customized
+- compliant
+- practical
+- low-risk
+
+==================================================
+STEP 3 — WRITE THE PROPOSAL
+==================================================
+
+Structure:
+
+1. Hook
+- Max 25 words
+- Mention exact problem or launch risk
 - No greeting
 
-2. UNDERSTANDING (2–3 lines)
-- Rephrase problem simply
+2. Understanding
+- Rephrase their actual goal simply
 
-3. APPROACH (3–5 lines)
-- Practical steps only
-- No buzzwords
+3. Execution Approach
+- Practical implementation steps only
+- Mention relevant stack/tools only if useful
 
-4. PROOF (1–2 lines)
-- Use ONE strong result
+4. Proof
+- Use ONE highly relevant result or experience
 
-5. EDGE
-- Either ask 1 smart question OR highlight 1 hidden risk
+5. Explicit Requirement Responses
+- Answer every direct request from the client
+- Include:
+  timeline
+  pricing
+  examples
+  requirements
+  process
+  requested experience
 
-6. CTA (1 line)
+6. Edge
+- Mention one hidden risk OR ask one smart implementation question
 
-HARD CONSTRAINTS:
+7. CTA
+- One short line
+
+==================================================
+HARD CONSTRAINTS
+==================================================
+
 - No generic phrases
-- No long sentences
-- No lists
+- No buzzwords
+- No resume dumping
+- No long paragraphs
+- No markdown
 - Max 220 words
+- Every sentence must feel specific to THIS job
 
-REJECTION RULE:
-If this proposal can be reused for another job, DO NOT generate it.
-Rewrite until it feels specific to this job.
+==================================================
+VALIDATION RULE
+==================================================
+
+Before finalizing, silently verify:
+
+- Did I answer every client request? (If not, rewrite)
+- Did I include requested pricing/timeline if present? (If not, rewrite)
+- Can this proposal be reused for another job? (If yes, rewrite)
+- Did I include unnecessary information? (If yes, rewrite)
+- Would this pass a manual screening test? (If not, rewrite)
+
+==================================================
+NUMBER OF PROPOSALS TO GENERATE
+==================================================
+- Generate 5 unique proposals with different hooks, approaches, and proofs.
 
 EOT;
     }
