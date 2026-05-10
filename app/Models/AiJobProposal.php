@@ -374,6 +374,8 @@ EOT;
             'name' => $config['personal']['first_name'] . ' ' . $config['personal']['last_name'],
             'skills' => $this->formatSkills($skills),
             'achievements' => $this->formatAchievements($achievements),
+            'experience' => '',
+            'certifications' => '',
             'case_study' => $this->formatCaseStudies($caseStudies),
         ];
     }
