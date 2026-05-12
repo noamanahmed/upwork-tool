@@ -154,7 +154,7 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <a href="https://www.upwork.com/jobs/~{{ $job->ciphertext }}"
+                                    <a href="https://www.upwork.com/jobs/~{{ ltrim($job->ciphertext, '~') }}"
                                        target="_blank"
                                        class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition"
                                        title="View on Upwork">

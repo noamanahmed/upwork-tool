@@ -60,7 +60,7 @@
                    class="px-4 py-2 text-sm border rounded-lg hover:bg-gray-100 transition">
                     ← Back to Jobs
                 </a>
-                <a href="https://www.upwork.com/jobs/~{{ $job->ciphertext }}"
+                <a href="https://www.upwork.com/jobs/~{{ ltrim($job->ciphertext, '~') }}"
                    target="_blank"
                    class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
                     View on Upwork
