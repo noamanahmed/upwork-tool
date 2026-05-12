@@ -100,6 +100,12 @@
                     <li><span class="text-gray-500 w-32 inline-block">Applicants:</span>
                         <strong class="text-gray-800">{{ $projectTotalApplicants }}</strong>
                     </li>
+                    <li><span class="text-gray-500 w-32 inline-block">Client Hires:</span>
+                        <strong class="text-gray-800">{{ $clientTotalHires }}</strong>
+                    </li>
+                    <li><span class="text-gray-500 w-32 inline-block">Client Feedback:</span>
+                        <strong class="text-gray-800">{{ $clientTotalFeedback }}</strong>
+                    </li>
                 </ul>
             </div>
             <div>
@@ -135,7 +141,7 @@
                     $carbonDate = $date ? \Carbon\Carbon::parse($date)->timezone($adminTimezone) : null;
                 @endphp
                     <li><span class="text-gray-500 w-32 inline-block">{{ $label }}:</span>
-                        <strong class="text-gray-800">{{ $carbonDate ? $carbonDate->format('Y-m-d H:i') . ' (' . $carbonDate->diffForHumans() . ')' : 'N/A' }}</strong>
+                        <strong class="text-gray-800">{{ $carbonDate ? $carbonDate->format('Y-m-d H:i:s') . ' (' . $carbonDate->diffForHumans() . ')' : 'N/A' }}</strong>
                     </li>
                 @endforeach
                 </ul>

@@ -28,7 +28,7 @@
         <h1 class="text-2xl font-bold mb-2">{{ $job->title }}</h1>
         <div class="text-sm text-gray-500">
             @php $adminTimezone = config('admin.personal.timezone','UTC'); @endphp
-            Proposal generated on {{ $proposal->generated_at?->timezone($adminTimezone)->format('Y-m-d H:i') ?? $proposal->created_at?->timezone($adminTimezone)->format('Y-m-d H:i') }}
+            Proposal generated on {{ $proposal->generated_at?->timezone($adminTimezone)->format('Y-m-d H:i:s') ?? $proposal->created_at?->timezone($adminTimezone)->format('Y-m-d H:i:s') }}
         </div>
     </div>
 
