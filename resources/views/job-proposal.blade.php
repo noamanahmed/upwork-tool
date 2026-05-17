@@ -69,6 +69,10 @@
         .provider-panel.active {
             display: block;
         }
+        #proposal-content-gemini h2{
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
