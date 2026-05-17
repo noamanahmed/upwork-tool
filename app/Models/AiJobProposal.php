@@ -38,12 +38,12 @@ class AiJobProposal extends BaseModel
     |--------------------------------------------------------------------------
     */
     public function getPromptText(): string
-{
-    $job = $this->getJobDetails();
-    $context = $this->buildContext();
-    $insights = $this->extractJobInsights();
+    {
+        $job = $this->getJobDetails();
+        $context = $this->buildContext();
+        $insights = $this->extractJobInsights();
 
-    return <<<EOT
+        return <<<EOT
 Write a highly tailored Upwork proposal for the following job.
 
 The proposal must feel:
@@ -229,7 +229,7 @@ OUTPUT REQUIREMENTS
 - Sound like a senior engineer, not a salesperson
 
 EOT;
-}
+    }
 
     public function getModelInstructions(): string
     {
@@ -349,26 +349,84 @@ Before finalizing, silently verify:
 ==================================================
 NUMBER OF PROPOSALS TO GENERATE
 ==================================================
-- Generate 5 unique proposals with different hooks, approaches, and proofs.
+- Generate 10 unique hook, 10 unique understanding, 10 unique execution approach, 10 unique proof, 10 unique explicit requirement responses, 10 unique edge, 10 unique cta, 10 unique proposal
 
 
 ==================================================
 OUTPUT FORMAT
 ==================================================
 
+--- Hook 1 ---
+{Hook Text}
+------------------
+
+--- Hook 2 ---
+{Hook Text}
+------------------
+
+--- Understanding 1 ---
+{Understanding Text}
+------------------
+
+--- Understanding 2 ---
+{Understanding Text}
+------------------
+
+--- Execution Approach 1 ---
+{Execution Approach Text}
+------------------
+
+--- Execution Approach 2 ---
+{Execution Approach Text}
+------------------
+
+
+--- Proof 1 ---
+{Proof Text}
+------------------
+
+--- Proof 2 ---
+{Proof Text}
+------------------
+
+
+--- Explicit Requirement Responses 1 ---
+{Explicit Requirement Responses Text}
+------------------
+
+--- Explicit Requirement Responses 2 ---
+{Explicit Requirement Responses Text}
+------------------
+
+--- Edge 1 ---
+{Edge Text}
+------------------
+
+--- Edge 2 ---
+{Edge Text}
+------------------
+
+--- Edge 5 ---
+{Edge Text}
+------------------
+
+--- CTA 1 ---
+{CTA Text}
+------------------
+
+--- CTA 2 ---
+{CTA Text}
+------------------
+
+
 --- Proposal 1 ---
 {Proposal Text}
 ------------------
-
 
 --- Proposal 2 ---
 {Proposal Text}
 ------------------
 
-
---- Proposal 3 ---
-{Proposal Text}
-------------------
 
 
 EOT;
