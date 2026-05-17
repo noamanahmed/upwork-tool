@@ -351,7 +351,7 @@ NUMBER OF PROPOSALS CONTENT TO GENERATE
 ==================================================
 - Generate different hooks, understandings, execution approaches, proofs, requirement responses, edges, and CTAs to test which ones perform best.
 - Generate at least 10 variations of each component for A/B testing.  
-
+- Combine them into at least 20 complete proposals to find the best performing one.
 
 ==================================================
 OUTPUT FORMAT
@@ -419,6 +419,14 @@ OUTPUT FORMAT
 ------------------
 ------------------
 
+--- Complete Proposal 1 ---
+{Complete Proposal Text}
+------------------
+------------------
+--- Complete Proposal 2 ---
+{Complete Proposal Text}
+------------------
+------------------
 
 
 EOT;
