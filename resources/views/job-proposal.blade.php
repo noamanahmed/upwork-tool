@@ -400,12 +400,21 @@
                     @php $panelProposal = $proposals->get($providerKey); @endphp
                     @if($panelProposal && $panelProposal->status === 'completed')
                         showProposal('{{ $providerKey }}', @json($panelProposal->proposal));
+                        // Hide regenerate button if disabled
+                        if (!enabledProviders.includes('{{ $providerKey }}')) {
+                        const btn = document.getElementById('regenerate-btn-{{ $providerKey }}');
+                        if (btn) btn.style.display = 'none';
+                        }
                     @elseif($panelProposal && $panelProposal->status === 'generating')
-                        // Already generating — jump straight into polling
-                        state['{{ $providerKey }}'].proposalId = {{ $panelProposal->id }};
-                        showLoading('{{ $providerKey }}', 'Generating...');
-                        updateStatus('{{ $providerKey }}', 'Generating...', 'bg-yellow-100 text-yellow-700');
-                        startPolling('{{ $providerKey }}');
+                        if (enabledProviders.includes('{{ $providerKey }}')) {
+                            // Already generating — jump straight into polling
+                            state['{{ $providerKey }}'].proposalId = {{ $panelProposal->id }};
+                            showLoading('{{ $providerKey }}', 'Generating...');
+                            updateStatus('{{ $providerKey }}', 'Generating...', 'bg-yellow-100 text-yellow-700');
+                            startPolling('{{ $providerKey }}');
+                        } else {
+                            showError('{{ $providerKey }}', 'Provider is currently disabled in your settings.');
+                        }
                     @elseif($panelProposal && $panelProposal->status === 'failed')
                         showError('{{ $providerKey }}', 'Previous generation failed.');
                     @else

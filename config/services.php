@@ -37,7 +37,7 @@ return [
         'available_providers' => ['openai', 'anthropic', 'gemini', 'azure', 'bedrock', 'groq', 'xai', 'deepseek', 'mistral', 'ollama', 'openrouter'],
         'enabled_providers' => array_values(array_filter(
             ['openai', 'anthropic', 'gemini', 'azure', 'bedrock', 'groq', 'xai', 'deepseek', 'mistral', 'ollama', 'openrouter'],
-            fn($p) => (bool) env('AI_' . strtoupper($p) . '_ENABLED', true)
+            fn($p) => (bool) env('AI_' . strtoupper($p) . '_ENABLED', false)
         )),
         'rate_limit' => env('AI_RATE_LIMIT', 5),
         'rate_limit_interval' => env('AI_RATE_LIMIT_INTERVAL', 60),
