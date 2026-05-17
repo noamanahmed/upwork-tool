@@ -86,18 +86,26 @@ class UpWorkController extends BaseController
     {
         $job = Job::findOrFail($jobId);
 
-        $provider = $request->get('provider', config('services.ai.provider'));
-        $modelName = config("services.ai.{$provider}.model", 'gpt-4');
-        $conversationId = config("services.ai.{$provider}.conversation_id", 'openai');
+        $enabledProviders = config('services.ai.enabled_providers', []);
+        $provider = $request->get('provider', $enabledProviders[0] ?? null);
 
-        if (empty($provider) || empty($modelName) || empty($conversationId)) {
-            return $this->upworkService->errorfullApiResponse([
-                'message' => 'Please provide a valid provider, model, and conversation id.',
+        if (!$provider || !in_array($provider, $enabledProviders)) {
+            return $this->upworkService->apiResponseWithAuthorizationFailedError([
+                'message' => "Provider [{$provider}] is not enabled. Enabled: " . implode(', ', $enabledProviders),
             ]);
         }
 
-        // Check if an AI proposal already exists for this job
-        $existingProposal = \App\Models\AiJobProposal::where('job_id', $jobId)
+        $modelName = config("services.ai.{$provider}.model");
+        $conversationId = config("services.ai.{$provider}.conversation_id");
+
+        if (empty($modelName) || empty($conversationId)) {
+            return $this->upworkService->errorfullApiResponse([
+                'message' => "Missing model or conversation_id config for provider [{$provider}].",
+            ]);
+        }
+
+        // Check if an AI proposal already exists for this job + provider
+        $existingProposal = AiJobProposal::where('job_id', $jobId)
             ->where('provider', $provider)
             ->first();
 
@@ -105,7 +113,7 @@ class UpWorkController extends BaseController
             if ($existingProposal->status === 'completed') {
                 return $this->upworkService->successfullApiResponse([
                     'message' => 'The AI proposal is already generated.',
-                    'proposal' => $existingProposal
+                    'proposal' => $existingProposal,
                 ]);
             }
 
@@ -114,14 +122,12 @@ class UpWorkController extends BaseController
             } else {
                 return $this->upworkService->successfullApiResponse([
                     'message' => 'The AI proposal is currently being generated.',
-                    'proposal' => $existingProposal
+                    'proposal' => $existingProposal,
                 ]);
             }
         }
 
-        $aiJobProposal = new AiJobProposal();
-        // Not generated yet, create and dispatch
-        $aiJobProposal = $aiJobProposal->fill([
+        $aiJobProposal = (new AiJobProposal())->fill([
             'job_id' => $jobId,
             'status' => 'generating',
             'provider' => $provider,
@@ -132,14 +138,13 @@ class UpWorkController extends BaseController
 
         $aiJobProposal->prompt = $aiJobProposal->getPromptText();
         $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
-
         $aiJobProposal->save();
 
         dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
 
         return $this->upworkService->successfullApiResponse([
             'message' => 'The AI proposal is currently being generated.',
-            'proposal' => $aiJobProposal
+            'proposal' => $aiJobProposal,
         ]);
     }
 
@@ -156,24 +161,32 @@ class UpWorkController extends BaseController
     public function regenerateProposal($jobId, Request $request)
     {
         $job = Job::findOrFail($jobId);
-        $provider = config('services.ai.provider');
-        $modelName = config("services.ai.{$provider}.model", 'gpt-4');
-        $conversationId = config("services.ai.{$provider}.conversation_id", 'openai');
 
-        if (empty($provider) || empty($modelName) || empty($conversationId)) {
-            return $this->upworkService->errorfullApiResponse([
-                'message' => 'Please configure AI provider, model, and conversation ID.'
+        $enabledProviders = config('services.ai.enabled_providers', []);
+        $provider = $request->get('provider', $enabledProviders[0] ?? null);
+
+        if (!$provider || !in_array($provider, $enabledProviders)) {
+            return $this->upworkService->apiResponseWithAuthorizationFailedError([
+                'message' => "Provider [{$provider}] is not enabled. Enabled: " . implode(', ', $enabledProviders),
             ]);
         }
 
-        // Delete any existing proposals for this job and provider
-        \App\Models\AiJobProposal::where('job_id', $jobId)
+        $modelName = config("services.ai.{$provider}.model");
+        $conversationId = config("services.ai.{$provider}.conversation_id");
+
+        if (empty($modelName) || empty($conversationId)) {
+            return $this->upworkService->errorfullApiResponse([
+                'message' => "Missing model or conversation_id config for provider [{$provider}].",
+            ]);
+        }
+
+        // Delete existing proposal for this job + provider only
+        AiJobProposal::where('job_id', $jobId)
             ->where('provider', $provider)
             ->delete();
 
-        // Create new proposal record
-        $aiJobProposal = new AiJobProposal();
-        $aiJobProposal = $aiJobProposal->fill([
+        // Create fresh proposal record
+        $aiJobProposal = (new AiJobProposal())->fill([
             'job_id' => $jobId,
             'status' => 'generating',
             'provider' => $provider,
@@ -186,12 +199,11 @@ class UpWorkController extends BaseController
         $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
         $aiJobProposal->save();
 
-        // Dispatch job
         dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
 
         return $this->upworkService->successfullApiResponse([
             'message' => 'Proposal regeneration initiated.',
-            'proposal' => $aiJobProposal->fresh()
+            'proposal' => $aiJobProposal->fresh(),
         ]);
     }
 }

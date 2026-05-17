@@ -34,7 +34,11 @@ return [
         'webhook_url' => env('SLACK_WEBHOOK_URL'),
     ],
     'ai' => [
-        'provider' => env('AI_PROVIDER', 'openai'),
+        'available_providers' => ['openai', 'gemini'],
+        'enabled_providers' => array_values(array_filter(
+            ['openai', 'gemini'],
+            fn($p) => (bool) env('AI_' . strtoupper($p) . '_ENABLED', true)
+        )),
         'rate_limit' => env('AI_RATE_LIMIT', 5),
         'rate_limit_interval' => env('AI_RATE_LIMIT_INTERVAL', 60),
         'max_parallel_requests' => env('AI_MAX_PARALLEL_REQUESTS', null),
@@ -47,8 +51,8 @@ return [
         'gemini' => [
             'key' => env('GEMINI_API_KEY'),
             'model' => env('GEMINI_MODEL', 'gemini-1.5-pro'),
-            'conversation_id' => env('GEMINI_CONVERSATION_ID', 'gemini')
-        ]
+            'conversation_id' => env('GEMINI_CONVERSATION_ID', 'gemini'),
+        ],
     ],
 
     'auth0' => [

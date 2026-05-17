@@ -29,12 +29,18 @@ Route::middleware(['auth', 'verified.user'])->group(function () {
     Route::get('/jobs', [JobController::class, 'index'])->name('jobs.index');
     Route::get('/job/{jobId}/proposal', function ($jobId) {
         $job = \App\Models\Job::findOrFail($jobId);
-        $provider = config('services.ai.provider');
-        $proposal = $job->aiProposals()
-            ->where('provider', $provider)
+        $enabledProviders = config('services.ai.enabled_providers', []);
+
+        $proposals = \App\Models\AiJobProposal::where('job_id', $jobId)
+            ->whereIn('provider', $enabledProviders)
             ->orderByDesc('created_at')
-            ->first();
-        return view('job-proposal', compact('job', 'proposal'));
+            ->get()
+            ->keyBy('provider');
+
+        // Keep backward-compat $proposal = first available (for timeline section)
+        $proposal = $proposals->first();
+
+        return view('job-proposal', compact('job', 'proposal', 'proposals', 'enabledProviders'));
     })->name('job.proposal');
 });
 

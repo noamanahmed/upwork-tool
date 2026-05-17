@@ -16,41 +16,62 @@ class GenerateAiProposals extends Command
                             {hours=1 : Look back window in hours}
                             {job_id? : Optional specific job ID}';
 
-    protected $description = 'Dispatch jobs to generate AI proposals';
+    protected $description = 'Dispatch jobs to generate AI proposals for all enabled providers';
 
     public function handle(): void
     {
-        [$provider, $model, $conversationId] = $this->resolveConfig();
+        $providers = $this->resolveEnabledProviders();
 
-        if (!$provider || !$model || !$conversationId) {
-            $this->error('Invalid AI configuration.');
+        if (empty($providers)) {
+            $this->error('No AI providers are enabled. Check AI_<PROVIDER>_ENABLED flags in .env.');
             return;
         }
+
+        $this->info('Enabled providers: ' . implode(', ', array_column($providers, 'provider')));
 
         $jobId = $this->argument('job_id');
 
-        if ($jobId) {
-            $this->handleSingleJob((int) $jobId, $provider, $model, $conversationId);
-            return;
+        foreach ($providers as $config) {
+            $this->line("--- Processing provider: {$config['provider']} ---");
+
+            if ($jobId) {
+                $this->handleSingleJob((int) $jobId, $config['provider'], $config['model'], $config['conversation_id']);
+            } else {
+                $this->handleBatch($config['provider'], $config['model'], $config['conversation_id']);
+            }
+        }
+    }
+
+    /**
+     * Resolve all enabled providers and their config.
+     * Returns array of ['provider', 'model', 'conversation_id'] tuples.
+     */
+    protected function resolveEnabledProviders(): array
+    {
+        $enabledProviders = config('services.ai.enabled_providers', []);
+        $result = [];
+
+        foreach ($enabledProviders as $provider) {
+            $model = config("services.ai.{$provider}.model");
+            $conversationId = config("services.ai.{$provider}.conversation_id");
+
+            if (!$model || !$conversationId) {
+                $this->warn("Skipping provider [{$provider}]: missing model or conversation_id config.");
+                continue;
+            }
+
+            $result[] = [
+                'provider' => $provider,
+                'model' => $model,
+                'conversation_id' => $conversationId,
+            ];
         }
 
-        $this->handleBatch($provider, $model, $conversationId);
+        return $result;
     }
 
     /**
-     * Resolve AI config
-     */
-    protected function resolveConfig(): array
-    {
-        $provider = config('services.ai.provider');
-        $model = config("services.ai.{$provider}.model", 'gpt-4');
-        $conversationId = config("services.ai.{$provider}.conversation_id", 'openai');
-
-        return [$provider, $model, $conversationId];
-    }
-
-    /**
-     * Handle batch mode
+     * Handle batch mode for a single provider
      */
     protected function handleBatch(string $provider, string $model, string $conversationId): void
     {
@@ -72,11 +93,11 @@ class GenerateAiProposals extends Command
             }
         }
 
-        $this->info("Done! Dispatched {$count} proposals.");
+        $this->info("[{$provider}] Done! Dispatched {$count} proposals.");
     }
 
     /**
-     * Handle single job mode
+     * Handle single job mode for a single provider
      */
     protected function handleSingleJob(int $jobId, string $provider, string $model, string $conversationId): void
     {
@@ -91,12 +112,12 @@ class GenerateAiProposals extends Command
 
         if ($existing) {
             if ($existing->status === 'generating') {
-                $this->warn("Job #{$jobId} is already being generated.");
+                $this->warn("[{$provider}] Job #{$jobId} is already being generated.");
                 return;
             }
 
             if ($existing->status === 'completed') {
-                $this->error("Proposal already exists for Job #{$jobId}.");
+                $this->error("[{$provider}] Proposal already exists for Job #{$jobId}.");
                 return;
             }
 
@@ -106,7 +127,7 @@ class GenerateAiProposals extends Command
         }
 
         if ($this->dispatchProposal($job, $provider, $model, $conversationId)) {
-            $this->info("Dispatched proposal for Job #{$jobId}.");
+            $this->info("[{$provider}] Dispatched proposal for Job #{$jobId}.");
         }
     }
 
@@ -122,12 +143,12 @@ class GenerateAiProposals extends Command
         }
 
         if ($existing->status === 'generating') {
-            $this->info("Skipping job #{$job->id}: already generating.");
+            $this->info("[{$provider}] Skipping job #{$job->id}: already generating.");
             return true;
         }
 
         if ($existing->status === 'completed') {
-            $this->info("Skipping job #{$job->id}: already completed.");
+            $this->info("[{$provider}] Skipping job #{$job->id}: already completed.");
             return true;
         }
 
@@ -148,7 +169,7 @@ class GenerateAiProposals extends Command
 
         dispatch(new GenerateAiJobProposal($proposal));
 
-        $this->info("Dispatched job #{$job->id}");
+        $this->info("[{$provider}] Dispatched job #{$job->id}");
 
         return true;
     }
