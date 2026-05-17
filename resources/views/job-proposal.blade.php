@@ -52,6 +52,14 @@
             border-bottom-color: #14a800;
             color: #14a800;
             font-weight: 600;
+            background-color: white;
+        }
+
+        @media (min-width: 768px) {
+            .provider-tab-btn.active {
+                border-bottom-color: transparent;
+                border-left-color: #14a800;
+            }
         }
 
         .provider-panel {
@@ -199,25 +207,34 @@
             </details>
         </div>
 
-        <!-- ===================== AI PROPOSALS (TABBED) ===================== -->
-        <div class="bg-white rounded-xl shadow border mb-6 overflow-hidden">
+        <!-- ===================== AI PROPOSALS (TABBED SIDELAYOUT) ===================== -->
+        <div class="bg-white rounded-xl shadow border mb-6 flex flex-col md:flex-row overflow-hidden">
 
-            <!-- Tab Header -->
-            <div class="flex border-b bg-gray-50">
-                <div class="px-6 py-4 flex items-center gap-2 border-r">
+            <!-- Sidebar Tabs -->
+            <div class="w-full md:w-56 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 flex-shrink-0">
+                <div class="px-6 py-4 flex items-center gap-2 border-b">
                     <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
                     <span class="font-semibold text-sm text-gray-700">AI Proposals</span>
                 </div>
-                <div class="flex flex-1 overflow-x-auto" id="provider-tabs">
-                    @foreach($enabledProviders as $providerKey)
+                <div class="flex flex-row md:flex-col overflow-x-auto" id="provider-tabs">
+                    @foreach($visibleTabs as $providerKey)
                         @php
                             $isFirst = $loop->first;
                             $providerLabel = match ($providerKey) {
                                 'openai' => 'OpenAI',
+                                'anthropic' => 'Anthropic',
                                 'gemini' => 'Gemini',
+                                'azure' => 'Azure',
+                                'bedrock' => 'Bedrock',
+                                'groq' => 'Groq',
+                                'xai' => 'xAI',
+                                'deepseek' => 'DeepSeek',
+                                'mistral' => 'Mistral',
+                                'ollama' => 'Ollama',
+                                'openrouter' => 'OpenRouter',
                                 default => ucfirst($providerKey),
                             };
                             $providerStatus = $proposals->get($providerKey)?->status;
@@ -235,7 +252,7 @@
                             };
                         @endphp
                         <button id="tab-btn-{{ $providerKey }}"
-                            class="provider-tab-btn px-5 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300 transition-all flex items-center gap-2 whitespace-nowrap {{ $isFirst ? 'active' : '' }}"
+                            class="provider-tab-btn px-5 py-4 text-sm font-medium border-b-2 md:border-b-0 md:border-l-4 border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all flex items-center justify-between gap-2 whitespace-nowrap {{ $isFirst ? 'active' : '' }}"
                             onclick="switchTab('{{ $providerKey }}')">
                             {{ $providerLabel }}
                             <span id="tab-badge-{{ $providerKey }}"
@@ -247,308 +264,324 @@
                 </div>
             </div>
 
-            <!-- Tab Panels -->
-            @foreach($enabledProviders as $providerKey)
-                @php
-                    $isFirst = $loop->first;
-                    $panelProposal = $proposals->get($providerKey);
-                    $providerModel = config("services.ai.{$providerKey}.model", 'N/A');
-                    $providerConversationId = config("services.ai.{$providerKey}.conversation_id", 'N/A');
-                @endphp
-                <div id="panel-{{ $providerKey }}" class="provider-panel {{ $isFirst ? 'active' : '' }}">
+            <!-- Tab Panels Content Area -->
+            <div class="flex-1 min-w-0">
+                @foreach($visibleTabs as $providerKey)
+                    @php
+                        $isFirst = $loop->first;
+                        $panelProposal = $proposals->get($providerKey);
+                        $providerModel = config("services.ai.{$providerKey}.model", 'N/A');
+                        $providerConversationId = config("services.ai.{$providerKey}.conversation_id", 'N/A');
+                    @endphp
+                    <div id="panel-{{ $providerKey }}" class="provider-panel {{ $isFirst ? 'active' : '' }}">
 
-                    <!-- Panel toolbar -->
-                    <div class="px-6 py-3 border-b bg-gray-50 flex items-center justify-between">
-                        <div class="flex items-center gap-3 text-xs text-gray-500">
-                            <span>Model: <strong
-                                    class="text-gray-700">{{ $panelProposal?->model ?? $providerModel }}</strong></span>
-                            <span class="text-gray-300">|</span>
-                            <span>Conv: <strong
-                                    class="text-gray-700">{{ $panelProposal?->conversation_id ?? $providerConversationId }}</strong></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span id="status-badge-{{ $providerKey }}" class="px-3 py-1 text-xs rounded bg-gray-200">
-                                Initializing...
-                            </span>
-                            <button id="regenerate-btn-{{ $providerKey }}"
-                                onclick="regenerateProposal('{{ $providerKey }}')"
-                                class="hidden px-3 py-1 text-sm border rounded hover:bg-gray-100 transition">
-                                ↺ Regenerate
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Panel content -->
-                    <div class="p-6">
-                        <!-- Loading -->
-                        <div id="loading-state-{{ $providerKey }}" class="text-center py-12">
-                            <div class="loader mx-auto mb-4"></div>
-                            <p id="loading-text-{{ $providerKey }}" class="text-gray-500">Initializing AI...</p>
-                        </div>
-
-                        <!-- Error -->
-                        <div id="error-state-{{ $providerKey }}" class="hidden text-center py-12">
-                            <p id="error-message-{{ $providerKey }}" class="text-red-500"></p>
-                        </div>
-
-                        <!-- Success -->
-                        <div id="completed-state-{{ $providerKey }}" class="hidden">
-                            <div id="proposal-content-{{ $providerKey }}" class="markdown-body"></div>
-                            <div class="mt-4 text-right">
-                                <button onclick="copyToClipboard('{{ $providerKey }}')"
-                                    class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">
-                                    <span id="copy-text-{{ $providerKey }}">Copy</span>
+                        <!-- Panel toolbar -->
+                        <div class="px-6 py-3 border-b bg-gray-50 flex items-center justify-between">
+                            <div class="flex items-center gap-3 text-xs text-gray-500">
+                                <span>Model: <strong
+                                        class="text-gray-700">{{ $panelProposal?->model ?? $providerModel }}</strong></span>
+                                <span class="text-gray-300">|</span>
+                                <span>Conv: <strong
+                                        class="text-gray-700">{{ $panelProposal?->conversation_id ?? $providerConversationId }}</strong></span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="status-badge-{{ $providerKey }}" class="px-3 py-1 text-xs rounded bg-gray-200">
+                                    Initializing...
+                                </span>
+                                <button id="regenerate-btn-{{ $providerKey }}"
+                                    onclick="regenerateProposal('{{ $providerKey }}')"
+                                    class="hidden px-3 py-1 text-sm border rounded hover:bg-gray-100 transition">
+                                    ↺ Regenerate
                                 </button>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Prompts & Instructions accordion (per provider) -->
-                    @if($panelProposal)
-                        <div class="border-t">
-                            <details class="group [&_summary::-webkit-details-marker]:hidden">
-                                <summary
-                                    class="flex items-center justify-between px-6 py-3 cursor-pointer list-none bg-gray-50 hover:bg-gray-100 transition text-sm">
-                                    <span class="flex items-center gap-2 font-medium text-gray-600">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
-                                            </path>
-                                        </svg>
-                                        Prompts & Instructions
-                                    </span>
-                                    <span class="transition group-open:rotate-180">
-                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 9l-7 7-7-7"></path>
-                                        </svg>
-                                    </span>
-                                </summary>
-                                <div class="px-6 py-4 border-t bg-white space-y-4">
-                                    <div>
-                                        <h3 class="text-xs font-semibold text-gray-500 uppercase mb-2">System Prompt</h3>
-                                        <pre
-                                            class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $panelProposal->prompt ?? 'N/A' }}</pre>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-xs font-semibold text-gray-500 uppercase mb-2">AI Instructions</h3>
-                                        <pre
-                                            class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $panelProposal->instructions ?? 'N/A' }}</pre>
-                                    </div>
+                        <!-- Panel content -->
+                        <div class="p-6">
+                            <!-- Loading -->
+                            <div id="loading-state-{{ $providerKey }}" class="text-center py-12">
+                                <div class="loader mx-auto mb-4"></div>
+                                <p id="loading-text-{{ $providerKey }}" class="text-gray-500">Initializing AI...</p>
+                            </div>
+
+                            <!-- Error -->
+                            <div id="error-state-{{ $providerKey }}" class="hidden text-center py-12">
+                                <p id="error-message-{{ $providerKey }}" class="text-red-500"></p>
+                            </div>
+
+                            <!-- Success -->
+                            <div id="completed-state-{{ $providerKey }}" class="hidden">
+                                <div id="proposal-content-{{ $providerKey }}" class="markdown-body"></div>
+                                <div class="mt-4 text-right">
+                                    <button onclick="copyToClipboard('{{ $providerKey }}')"
+                                        class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">
+                                        <span id="copy-text-{{ $providerKey }}">Copy</span>
+                                    </button>
                                 </div>
-                            </details>
+                            </div>
                         </div>
-                    @endif
 
-                </div>
-            @endforeach
+                        <!-- Prompts & Instructions accordion (per provider) -->
+                        @if($panelProposal)
+                            <div class="border-t">
+                                <details class="group [&_summary::-webkit-details-marker]:hidden">
+                                    <summary
+                                        class="flex items-center justify-between px-6 py-3 cursor-pointer list-none bg-gray-50 hover:bg-gray-100 transition text-sm">
+                                        <span class="flex items-center gap-2 font-medium text-gray-600">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                                                </path>
+                                            </svg>
+                                            Prompts & Instructions
+                                        </span>
+                                        <span class="transition group-open:rotate-180">
+                                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </span>
+                                    </summary>
+                                    <div class="px-6 py-4 border-t bg-white space-y-4">
+                                        <div>
+                                            <h3 class="text-xs font-semibold text-gray-500 uppercase mb-2">System Prompt</h3>
+                                            <pre
+                                                class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $panelProposal->prompt ?? 'N/A' }}</pre>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xs font-semibold text-gray-500 uppercase mb-2">AI Instructions</h3>
+                                            <pre
+                                                class="bg-gray-50 p-4 rounded text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ $panelProposal->instructions ?? 'N/A' }}</pre>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        @endif
+
+                    </div>
+                @endforeach
+            </div>
+
         </div>
 
-    </div>
+        <script>
+            const jobId = "{{ $job->id }}";
+            const enabledProviders = @json($enabledProviders);
+            const visibleTabs = @json($visibleTabs);
 
-    <script>
-        const jobId = "{{ $job->id }}";
-        const enabledProviders = @json($enabledProviders);
-
-        // Per-provider state
-        const state = {};
-        enabledProviders.forEach(p => {
-            state[p] = {
-                proposalId: null,
-                pollInterval: null,
-                pollAttempts: 0,
-                rawText: null,
-            };
-        });
-
-        // -------- TAB SWITCHING --------
-
-        function switchTab(provider) {
-            enabledProviders.forEach(p => {
-                document.getElementById('tab-btn-' + p)?.classList.remove('active');
-                document.getElementById('panel-' + p)?.classList.remove('active');
+            // Per-provider state
+            const state = {};
+            visibleTabs.forEach(p => {
+                state[p] = {
+                    proposalId: null,
+                    pollInterval: null,
+                    pollAttempts: 0,
+                    rawText: null,
+                };
             });
-            document.getElementById('tab-btn-' + provider)?.classList.add('active');
-            document.getElementById('panel-' + provider)?.classList.add('active');
-        }
 
-        // -------- INIT --------
+            // -------- TAB SWITCHING --------
 
-        document.addEventListener('DOMContentLoaded', () => {
-            @foreach($enabledProviders as $providerKey)
-                @php $panelProposal = $proposals->get($providerKey); @endphp
-                @if($panelProposal && $panelProposal->status === 'completed')
-                    showProposal('{{ $providerKey }}', @json($panelProposal->proposal));
-                @elseif($panelProposal && $panelProposal->status === 'generating')
-                    // Already generating — jump straight into polling
-                    state['{{ $providerKey }}'].proposalId = {{ $panelProposal->id }};
-                    showLoading('{{ $providerKey }}', 'Generating...');
-                    updateStatus('{{ $providerKey }}', 'Generating...', 'bg-yellow-100 text-yellow-700');
-                    startPolling('{{ $providerKey }}');
-                @elseif($panelProposal && $panelProposal->status === 'failed')
-                    showError('{{ $providerKey }}', 'Previous generation failed. Click Regenerate to retry.');
-                @else
-                    startGeneration('{{ $providerKey }}');
-                @endif
-            @endforeach
-});
+            function switchTab(provider) {
+                visibleTabs.forEach(p => {
+                    document.getElementById('tab-btn-' + p)?.classList.remove('active');
+                    document.getElementById('panel-' + p)?.classList.remove('active');
+                });
+                document.getElementById('tab-btn-' + provider)?.classList.add('active');
+                document.getElementById('panel-' + provider)?.classList.add('active');
+            }
 
-        // -------- STATE DISPLAY --------
+            // -------- INIT --------
 
-        function showLoading(provider, text = 'Generating...') {
-            document.getElementById('loading-state-' + provider).classList.remove('hidden');
-            document.getElementById('error-state-' + provider).classList.add('hidden');
-            document.getElementById('completed-state-' + provider).classList.add('hidden');
-            document.getElementById('loading-text-' + provider).innerText = text;
-            document.getElementById('regenerate-btn-' + provider).classList.add('hidden');
-        }
+            document.addEventListener('DOMContentLoaded', () => {
+                @foreach($visibleTabs as $providerKey)
+                    @php $panelProposal = $proposals->get($providerKey); @endphp
+                    @if($panelProposal && $panelProposal->status === 'completed')
+                        showProposal('{{ $providerKey }}', @json($panelProposal->proposal));
+                    @elseif($panelProposal && $panelProposal->status === 'generating')
+                        // Already generating — jump straight into polling
+                        state['{{ $providerKey }}'].proposalId = {{ $panelProposal->id }};
+                        showLoading('{{ $providerKey }}', 'Generating...');
+                        updateStatus('{{ $providerKey }}', 'Generating...', 'bg-yellow-100 text-yellow-700');
+                        startPolling('{{ $providerKey }}');
+                    @elseif($panelProposal && $panelProposal->status === 'failed')
+                        showError('{{ $providerKey }}', 'Previous generation failed.');
+                    @else
+                                if (enabledProviders.includes('{{ $providerKey }}')) {
+                            startGeneration('{{ $providerKey }}');
+                        } else {
+                            showError('{{ $providerKey }}', 'Provider is currently disabled in your settings.');
+                        }
+                    @endif
 
-        function showError(provider, message) {
-            document.getElementById('loading-state-' + provider).classList.add('hidden');
-            document.getElementById('completed-state-' + provider).classList.add('hidden');
-            document.getElementById('error-state-' + provider).classList.remove('hidden');
-            document.getElementById('error-message-' + provider).innerText = message;
-            document.getElementById('regenerate-btn-' + provider).classList.remove('hidden');
-            updateStatus(provider, 'Failed', 'bg-red-100 text-red-700');
-            updateTabBadge(provider, 'Failed', 'bg-red-100 text-red-700');
-        }
+                        // Hide regenerate button if disabled
+                        if (!enabledProviders.includes('{{ $providerKey }}')) {
+                        const btn = document.getElementById('regenerate-btn-{{ $providerKey }}');
+                        if (btn) btn.style.display = 'none';
+                    }
+                @endforeach
+            });
 
-        function showProposal(provider, markdown) {
-            document.getElementById('loading-state-' + provider).classList.add('hidden');
-            document.getElementById('error-state-' + provider).classList.add('hidden');
-            document.getElementById('completed-state-' + provider).classList.remove('hidden');
-            document.getElementById('proposal-content-' + provider).innerHTML =
-                DOMPurify.sanitize(marked.parse(markdown));
-            document.getElementById('regenerate-btn-' + provider).classList.remove('hidden');
-            state[provider].rawText = markdown;
-            updateStatus(provider, 'Completed', 'bg-green-100 text-green-700');
-            updateTabBadge(provider, 'Done', 'bg-green-100 text-green-700');
-        }
+            // -------- STATE DISPLAY --------
 
-        // -------- GENERATION FLOW --------
+            function showLoading(provider, text = 'Generating...') {
+                document.getElementById('loading-state-' + provider).classList.remove('hidden');
+                document.getElementById('error-state-' + provider).classList.add('hidden');
+                document.getElementById('completed-state-' + provider).classList.add('hidden');
+                document.getElementById('loading-text-' + provider).innerText = text;
+                document.getElementById('regenerate-btn-' + provider).classList.add('hidden');
+            }
 
-        function startGeneration(provider) {
-            showLoading(provider, 'Requesting AI...');
-            updateStatus(provider, 'Queued', 'bg-blue-100 text-blue-700');
-            updateTabBadge(provider, 'Queued', 'bg-blue-100 text-blue-700');
+            function showError(provider, message) {
+                document.getElementById('loading-state-' + provider).classList.add('hidden');
+                document.getElementById('completed-state-' + provider).classList.add('hidden');
+                document.getElementById('error-state-' + provider).classList.remove('hidden');
+                document.getElementById('error-message-' + provider).innerText = message;
+                if (enabledProviders.includes(provider)) {
+                    document.getElementById('regenerate-btn-' + provider).classList.remove('hidden');
+                }
+                updateStatus(provider, 'Failed', 'bg-red-100 text-red-700');
+                updateTabBadge(provider, 'Failed', 'bg-red-100 text-red-700');
+            }
 
-            fetch(`/api/v1/upwork/job/${jobId}/generate-proposal?provider=${provider}`)
-                .then(handleResponse)
-                .then(data => {
-                    if (!data.proposal) throw new Error('No proposal in response');
+            function showProposal(provider, markdown) {
+                document.getElementById('loading-state-' + provider).classList.add('hidden');
+                document.getElementById('error-state-' + provider).classList.add('hidden');
+                document.getElementById('completed-state-' + provider).classList.remove('hidden');
+                document.getElementById('proposal-content-' + provider).innerHTML =
+                    DOMPurify.sanitize(marked.parse(markdown));
+                if (enabledProviders.includes(provider)) {
+                    document.getElementById('regenerate-btn-' + provider).classList.remove('hidden');
+                }
+                state[provider].rawText = markdown;
+                updateStatus(provider, 'Completed', 'bg-green-100 text-green-700');
+                updateTabBadge(provider, 'Done', 'bg-green-100 text-green-700');
+            }
 
-                    state[provider].proposalId = data.proposal.id;
+            // -------- GENERATION FLOW --------
 
-                    if (data.proposal.status === 'completed') {
-                        showProposal(provider, data.proposal.proposal);
-                    } else {
+            function startGeneration(provider) {
+                showLoading(provider, 'Requesting AI...');
+                updateStatus(provider, 'Queued', 'bg-blue-100 text-blue-700');
+                updateTabBadge(provider, 'Queued', 'bg-blue-100 text-blue-700');
+
+                fetch(`/api/v1/upwork/job/${jobId}/generate-proposal?provider=${provider}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        if (!data.proposal) throw new Error('No proposal in response');
+
+                        state[provider].proposalId = data.proposal.id;
+
+                        if (data.proposal.status === 'completed') {
+                            showProposal(provider, data.proposal.proposal);
+                        } else {
+                            updateStatus(provider, 'Generating...', 'bg-yellow-100 text-yellow-700');
+                            updateTabBadge(provider, 'Generating', 'bg-yellow-100 text-yellow-700');
+                            startPolling(provider);
+                        }
+                    })
+                    .catch(err => showError(provider, 'Failed to start generation: ' + err.message));
+            }
+
+            function startPolling(provider) {
+                if (!state[provider].proposalId) return;
+
+                const MAX_POLL = 40;
+                state[provider].pollAttempts = 0;
+
+                state[provider].pollInterval = setInterval(() => {
+                    if (state[provider].pollAttempts++ > MAX_POLL) {
+                        clearInterval(state[provider].pollInterval);
+                        showError(provider, 'Timeout waiting for proposal.');
+                        return;
+                    }
+
+                    fetch(`/api/v1/upwork/job/${jobId}/${state[provider].proposalId}`)
+                        .then(handleResponse)
+                        .then(data => {
+                            if (!data.proposal) return;
+
+                            if (data.proposal.status === 'completed') {
+                                clearInterval(state[provider].pollInterval);
+                                showProposal(provider, data.proposal.proposal);
+                            }
+
+                            if (data.proposal.status === 'failed') {
+                                clearInterval(state[provider].pollInterval);
+                                showError(provider, data.proposal.proposal || 'Generation failed.');
+                            }
+                        })
+                        .catch(() => {/* silently retry */ });
+
+                }, 3000);
+            }
+
+            // -------- REGENERATE --------
+
+            function regenerateProposal(provider) {
+                if (!confirm(`Regenerate proposal using ${provider}?`)) return;
+
+                // Stop any in-flight polling
+                if (state[provider].pollInterval) {
+                    clearInterval(state[provider].pollInterval);
+                    state[provider].pollInterval = null;
+                }
+
+                showLoading(provider, 'Regenerating...');
+                updateStatus(provider, 'Queued', 'bg-blue-100 text-blue-700');
+                updateTabBadge(provider, 'Queued', 'bg-blue-100 text-blue-700');
+
+                fetch(`/api/v1/upwork/job/${jobId}/regenerate-proposal?provider=${provider}`, { method: 'POST' })
+                    .then(handleResponse)
+                    .then(data => {
+                        if (!data.proposal) throw new Error('No proposal in response');
+                        state[provider].proposalId = data.proposal.id;
                         updateStatus(provider, 'Generating...', 'bg-yellow-100 text-yellow-700');
                         updateTabBadge(provider, 'Generating', 'bg-yellow-100 text-yellow-700');
                         startPolling(provider);
-                    }
-                })
-                .catch(err => showError(provider, 'Failed to start generation: ' + err.message));
-        }
-
-        function startPolling(provider) {
-            if (!state[provider].proposalId) return;
-
-            const MAX_POLL = 40;
-            state[provider].pollAttempts = 0;
-
-            state[provider].pollInterval = setInterval(() => {
-                if (state[provider].pollAttempts++ > MAX_POLL) {
-                    clearInterval(state[provider].pollInterval);
-                    showError(provider, 'Timeout waiting for proposal.');
-                    return;
-                }
-
-                fetch(`/api/v1/upwork/job/${jobId}/${state[provider].proposalId}`)
-                    .then(handleResponse)
-                    .then(data => {
-                        if (!data.proposal) return;
-
-                        if (data.proposal.status === 'completed') {
-                            clearInterval(state[provider].pollInterval);
-                            showProposal(provider, data.proposal.proposal);
-                        }
-
-                        if (data.proposal.status === 'failed') {
-                            clearInterval(state[provider].pollInterval);
-                            showError(provider, data.proposal.proposal || 'Generation failed.');
-                        }
                     })
-                    .catch(() => {/* silently retry */ });
-
-            }, 3000);
-        }
-
-        // -------- REGENERATE --------
-
-        function regenerateProposal(provider) {
-            if (!confirm(`Regenerate proposal using ${provider}?`)) return;
-
-            // Stop any in-flight polling
-            if (state[provider].pollInterval) {
-                clearInterval(state[provider].pollInterval);
-                state[provider].pollInterval = null;
+                    .catch(err => {
+                        showError(provider, 'Regeneration failed: ' + err.message);
+                    });
             }
 
-            showLoading(provider, 'Regenerating...');
-            updateStatus(provider, 'Queued', 'bg-blue-100 text-blue-700');
-            updateTabBadge(provider, 'Queued', 'bg-blue-100 text-blue-700');
+            // -------- COPY --------
 
-            fetch(`/api/v1/upwork/job/${jobId}/regenerate-proposal?provider=${provider}`, { method: 'POST' })
-                .then(handleResponse)
-                .then(data => {
-                    if (!data.proposal) throw new Error('No proposal in response');
-                    state[provider].proposalId = data.proposal.id;
-                    updateStatus(provider, 'Generating...', 'bg-yellow-100 text-yellow-700');
-                    updateTabBadge(provider, 'Generating', 'bg-yellow-100 text-yellow-700');
-                    startPolling(provider);
-                })
-                .catch(err => {
-                    showError(provider, 'Regeneration failed: ' + err.message);
+            function copyToClipboard(provider) {
+                navigator.clipboard.writeText(state[provider].rawText || '').then(() => {
+                    const el = document.getElementById('copy-text-' + provider);
+                    el.innerText = 'Copied!';
+                    el.classList.add('text-green-600');
+                    setTimeout(() => {
+                        el.innerText = 'Copy';
+                        el.classList.remove('text-green-600');
+                    }, 2000);
                 });
-        }
+            }
 
-        // -------- COPY --------
+            // -------- HELPERS --------
 
-        function copyToClipboard(provider) {
-            navigator.clipboard.writeText(state[provider].rawText || '').then(() => {
-                const el = document.getElementById('copy-text-' + provider);
-                el.innerText = 'Copied!';
-                el.classList.add('text-green-600');
-                setTimeout(() => {
-                    el.innerText = 'Copy';
-                    el.classList.remove('text-green-600');
-                }, 2000);
-            });
-        }
+            function updateStatus(provider, text, classes) {
+                const el = document.getElementById('status-badge-' + provider);
+                if (!el) return;
+                el.innerText = text;
+                el.className = `px-3 py-1 text-xs rounded ${classes}`;
+            }
 
-        // -------- HELPERS --------
+            function updateTabBadge(provider, text, classes) {
+                const el = document.getElementById('tab-badge-' + provider);
+                if (!el) return;
+                el.innerText = text;
+                el.className = `px-2 py-0.5 text-xs rounded-full ${classes}`;
+            }
 
-        function updateStatus(provider, text, classes) {
-            const el = document.getElementById('status-badge-' + provider);
-            if (!el) return;
-            el.innerText = text;
-            el.className = `px-3 py-1 text-xs rounded ${classes}`;
-        }
-
-        function updateTabBadge(provider, text, classes) {
-            const el = document.getElementById('tab-badge-' + provider);
-            if (!el) return;
-            el.innerText = text;
-            el.className = `px-2 py-0.5 text-xs rounded-full ${classes}`;
-        }
-
-        function handleResponse(res) {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        }
-    </script>
+            function handleResponse(res) {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            }
+        </script>
 
 </body>
 

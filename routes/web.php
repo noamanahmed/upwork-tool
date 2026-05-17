@@ -30,17 +30,23 @@ Route::middleware(['auth', 'verified.user'])->group(function () {
     Route::get('/job/{jobId}/proposal', function ($jobId) {
         $job = \App\Models\Job::findOrFail($jobId);
         $enabledProviders = config('services.ai.enabled_providers', []);
+        $availableProviders = config('services.ai.available_providers', []);
 
         $proposals = \App\Models\AiJobProposal::where('job_id', $jobId)
-            ->whereIn('provider', $enabledProviders)
+            ->whereIn('provider', $availableProviders)
             ->orderByDesc('created_at')
             ->get()
             ->keyBy('provider');
 
+        // Visible tabs are those that are enabled OR have an existing proposal
+        $visibleTabs = collect($availableProviders)->filter(function ($p) use ($enabledProviders, $proposals) {
+            return in_array($p, $enabledProviders) || $proposals->has($p);
+        })->values();
+
         // Keep backward-compat $proposal = first available (for timeline section)
         $proposal = $proposals->first();
 
-        return view('job-proposal', compact('job', 'proposal', 'proposals', 'enabledProviders'));
+        return view('job-proposal', compact('job', 'proposal', 'proposals', 'enabledProviders', 'visibleTabs'));
     })->name('job.proposal');
 });
 
