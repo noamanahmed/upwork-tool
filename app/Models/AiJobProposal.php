@@ -223,7 +223,7 @@ OUTPUT REQUIREMENTS
 - No fluff
 - No markdown
 - Plain text only
-- Maximum 220 words
+- Maximum 220 words per proposal
 - Short paragraphs preferred
 - Do not use bullet spam
 - Sound like a senior engineer, not a salesperson
