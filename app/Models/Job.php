@@ -128,14 +128,26 @@ class Job extends BaseModel
      */
     public function getPublicProposalUrl(): string
     {
+        $expiresAt = now()->addHours(24)->timestamp;
+
         $payload = [
             'job_id' => $this->id,
-            'expires_at' => now()->addHours(24)->timestamp,
-            // Add HMAC signature to prevent tampering
-            'signature' => hash_hmac('sha256', $this->id . now()->addHours(24)->timestamp, config('app.key')),
+            'expires_at' => $expiresAt,
         ];
 
-        $encrypted = urlencode(Crypt::encryptString(json_encode($payload)));
+        $payload['signature'] = hash_hmac(
+            'sha256',
+            $payload['job_id'] . $payload['expires_at'],
+            config('app.key')
+        );
+
+        $encrypted = Crypt::encryptString(json_encode($payload));
+
+        /**
+         * IMPORTANT:
+         * Do NOT use urlencode() here — it breaks Slack link parsing
+         * and is unnecessary because route() / url() already handles encoding safely.
+         */
         return url("/public/proposal/{$encrypted}");
     }
 }
