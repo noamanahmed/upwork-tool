@@ -41,7 +41,7 @@ class PublicProposalService
         try {
             $decrypted = Crypt::decryptString($token);
             $payload = json_decode($decrypted, true);
-
+            
             if (!$payload || !isset($payload['job_id'], $payload['expires_at'], $payload['signature'])) {
                 return null;
             }
@@ -50,35 +50,23 @@ class PublicProposalService
             if (Carbon::now()->timestamp > $payload['expires_at']) {
                 return null;
             }
-
             // Verify signature
             $expectedSignature = hash_hmac('sha256', $payload['job_id'] . $payload['expires_at'], config('app.key'));
             if (!hash_equals($expectedSignature, $payload['signature'])) {
                 return null;
             }
+            
 
             $job = Job::find($payload['job_id']);
-
+            
             if (!$job) {
                 return null;
             }
 
-            // Fetch latest proposal for this job (by configured provider)
-            $provider = config('services.ai.provider');
-            $proposal = $job->aiProposals()
-                ->where('provider', $provider)
-                ->orderByDesc('created_at')
-                ->first();
-
-            if (!$proposal) {
-                return null;
-            }
-
             return [
-                'job' => $job,
-                'proposal' => $proposal,
+                'job' => $job             
             ];
-        } catch (\Exception $e) {
+        } catch (\Exception $e) {            
             return null;
         }
     }

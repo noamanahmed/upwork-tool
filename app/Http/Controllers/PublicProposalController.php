@@ -21,7 +21,7 @@ class PublicProposalController extends Controller
         }
 
         $job = $result['job'];
-        $proposal = $result['proposal'];
+        $proposal = $job->aiProposals()->latest()->first();        
 
         return view('public-proposal', compact('job', 'proposal'));
     }
