@@ -73,7 +73,7 @@ class Job extends BaseModel
         // Public proposal link (24h temporary, no proposal ID in URL)
         $publicUrl = $job->getPublicProposalUrl();
         if ($publicUrl) {
-            $text .= '*Public Proposal Link (24h)*  :' . $publicUrl;
+            $text .= '*Public Proposal Link (24h)* : <' . $publicUrl . '>';
             $text .= "\n";
         }
 
