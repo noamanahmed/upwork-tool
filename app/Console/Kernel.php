@@ -26,7 +26,7 @@ class Kernel extends ConsoleKernel
             $schedule->command('upwork:generate-ai-proposals')->everyMinute();
         }
         $schedule->command('upwork:prune-telescope')->everyFifteenMinutes();
-        $schedule->command('telescope:prune --hours=96')->everyThreeHours();
+        $schedule->command('telescope:prune --hours=8')->hourly();
 
     }
 
