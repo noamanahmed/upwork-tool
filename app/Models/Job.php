@@ -135,7 +135,9 @@ class Job extends BaseModel
             'signature' => hash_hmac('sha256', $this->id . now()->addHours(24)->timestamp, config('app.key')),
         ];
 
-        $encrypted = urlencode(Crypt::encryptString(json_encode($payload)));
+        $encrypted = Crypt::encryptString(json_encode($payload));
+
+        $encrypted = rawurlencode($encrypted);
         return url("/public/proposal/{$encrypted}");
     }
 }
