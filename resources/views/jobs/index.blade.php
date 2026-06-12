@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        .search-tag { transition: all 0.15s ease; }
+        .search-tag:hover { transform: translateY(-1px); }
     </style>
 </head>
 
@@ -16,15 +18,38 @@
 
 <div class="max-w-full mx-auto px-4 py-8">
 
-    <div class="mb-6 flex justify-between items-center">
+    <div class="mb-4 flex justify-between items-center">
         <h1 class="text-2xl font-bold">Jobs</h1>
         <div class="flex gap-2">
-            <a href="{{ route('jobs.index', ['per_page' => 15]) }}"
+            <a href="{{ route('jobs.index', array_merge(request()->except('per_page'), ['per_page' => 15])) }}"
                class="px-3 py-1 text-sm border rounded {{ request()->get('per_page') == 15 ? 'bg-gray-200' : 'bg-white' }}">15</a>
-            <a href="{{ route('jobs.index', ['per_page' => 50]) }}"
+            <a href="{{ route('jobs.index', array_merge(request()->except('per_page'), ['per_page' => 50])) }}"
                class="px-3 py-1 text-sm border rounded {{ request()->get('per_page') == 50 ? 'bg-gray-200' : 'bg-white' }}">50</a>
-            <a href="{{ route('jobs.index', ['per_page' => 100]) }}"
+            <a href="{{ route('jobs.index', array_merge(request()->except('per_page'), ['per_page' => 100])) }}"
                class="px-3 py-1 text-sm border rounded {{ request()->get('per_page') == 100 ? 'bg-gray-200' : 'bg-white' }}">100</a>
+        </div>
+    </div>
+
+    <!-- Category Filter Bar -->
+    <div class="mb-4 bg-white rounded-xl shadow border p-4">
+        <div class="text-sm text-gray-500 mb-2 font-medium">Filter by Search Category</div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('jobs.index', request()->except(['search_id', 'page'])) }}"
+               class="search-tag px-3 py-1 text-xs rounded-full border
+                      {{ is_null($selectedSearchId) ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500' }}">
+                All
+            </a>
+            @foreach($allSearches as $search)
+                @php
+                    $isActive = (string) $selectedSearchId === (string) $search->id;
+                @endphp
+                <a href="{{ route('jobs.index', array_merge(request()->except('page'), ['search_id' => $search->id])) }}"
+                   class="search-tag px-3 py-1 text-xs rounded-full border
+                          {{ $isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600' }}">
+                    {{ $search->name }}
+                    <span class="ml-1 opacity-70">({{ $search->jobs_count }})</span>
+                </a>
+            @endforeach
         </div>
     </div>
 
@@ -36,6 +61,7 @@
                         @php
                             $headers = [
                                 ['label' => 'Job Title', 'sort' => 'title'],
+                                ['label' => 'Categories', 'sort' => null],
                                 ['label' => 'Status', 'sort' => 'proposal_status'],
                                 ['label' => 'Type', 'sort' => 'is_hourly'],
                                 ['label' => 'Budget', 'sort' => 'budget_minimum'],
@@ -56,15 +82,19 @@
                                 $isSorted = $sortBy === $header['sort'];
                                 $nextDir = $isSorted && $sortDir === 'asc' ? 'desc' : 'asc';
                                 $icon = $isSorted ? ($sortDir === 'asc' ? '↑' : '↓') : '↕';
-                                $query = array_merge(request()->query(), ['sort' => $header['sort'], 'dir' => $nextDir]);
+                                $query = $header['sort'] ? array_merge(request()->query(), ['sort' => $header['sort'], 'dir' => $nextDir]) : '#';
                             @endphp
                             <th class="px-4 py-3">
-                                <a href="{{ route('jobs.index', $query) }}"
-                                   class="flex items-center gap-1 hover:text-gray-900 transition"
-                                   title="Sort by {{ $header['label'] }}">
+                                @if($header['sort'])
+                                    <a href="{{ route('jobs.index', $query) }}"
+                                       class="flex items-center gap-1 hover:text-gray-900 transition"
+                                       title="Sort by {{ $header['label'] }}">
+                                        <span>{{ $header['label'] }}</span>
+                                        <span class="text-xs">{{ $icon }}</span>
+                                    </a>
+                                @else
                                     <span>{{ $header['label'] }}</span>
-                                    <span class="text-xs">{{ $icon }}</span>
-                                </a>
+                                @endif
                             </th>
                         @endforeach
 
@@ -94,6 +124,20 @@
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-4 py-3">
                                 <div class="font-medium text-gray-900">{{ \Illuminate\Support\Str::limit($job->title, 50) }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-wrap gap-1">
+                                    @forelse($job->searches as $search)
+                                        <a href="{{ route('jobs.index', array_merge(request()->except('page'), ['search_id' => $search->id])) }}"
+                                           class="search-tag px-2 py-0.5 text-xs rounded-full
+                                                  {{ (string) $selectedSearchId === (string) $search->id ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-gray-100 text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600' }}"
+                                           title="Filter by {{ $search->name }}">
+                                            {{ \Illuminate\Support\Str::limit($search->name, 20) }}
+                                        </a>
+                                    @empty
+                                        <span class="text-xs text-gray-400">—</span>
+                                    @endforelse
+                                </div>
                             </td>
                             <td class="px-4 py-3">
                                 @php
@@ -175,7 +219,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14" class="px-4 py-8 text-center text-gray-500">
+                            <td colspan="15" class="px-4 py-8 text-center text-gray-500">
                                 No jobs found.
                             </td>
                         </tr>

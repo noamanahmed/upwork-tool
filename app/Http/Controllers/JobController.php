@@ -3,19 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Job;
+use App\Models\JobSearch;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class JobController extends Controller
 {
     /**
-     * Display a paginated list of all jobs with sorting.
+     * Display a paginated list of all jobs with sorting and search filtering.
      */
     public function index(Request $request)
     {
         $perPage = (int) $request->get('per_page', 15);
         $sortBy = $request->get('sort', 'created_at');
         $sortDir = $request->get('dir', 'desc');
+        $selectedSearchId = $request->get('search_id');
 
         // Whitelist allowed sort columns
         $allowedSorts = [
@@ -43,7 +45,14 @@ class JobController extends Controller
             $sortDir = 'desc';
         }
 
-        $query = Job::with('aiProposals');
+        $query = Job::with(['aiProposals', 'searches']);
+
+        // Filter by search/category
+        if ($selectedSearchId) {
+            $query->whereHas('searches', function ($q) use ($selectedSearchId) {
+                $q->where('job_searches.id', $selectedSearchId);
+            });
+        }
 
         // Apply custom sorting
         switch ($sortBy) {
@@ -135,8 +144,9 @@ class JobController extends Controller
         }
 
         $jobs = $query->paginate($perPage)->withQueryString();
+        $allSearches = JobSearch::orderBy('name')->withCount('jobs')->get();
 
-        return view('jobs.index', compact('jobs', 'sortBy', 'sortDir'));
+        return view('jobs.index', compact('jobs', 'sortBy', 'sortDir', 'allSearches', 'selectedSearchId'));
     }
 
 
