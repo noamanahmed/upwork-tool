@@ -53,6 +53,203 @@
         </div>
     </div>
 
+    <!-- Search Bar -->
+    <div class="mb-4 bg-white rounded-xl shadow border p-4">
+        <form method="GET" action="{{ route('jobs.index') }}" class="flex gap-3 items-center">
+            @foreach(['sort','dir','per_page','search_id'] as $preserve)
+                @if(request()->get($preserve))
+                    <input type="hidden" name="{{ $preserve }}" value="{{ request()->get($preserve) }}">
+                @endif
+            @endforeach
+            <div class="relative flex-1">
+                <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
+                       placeholder="Search by job title or description..."
+                       class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                Search
+            </button>
+            <a href="{{ route('jobs.index') }}"
+               class="px-4 py-2 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition">
+                Reset
+            </a>
+        </form>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="mb-4 bg-white rounded-xl shadow border overflow-hidden">
+        <details class="group" {{ count(array_filter($filters, fn($v) => $v !== null && $v !== '')) > 0 ? 'open' : '' }}>
+            <summary class="px-4 py-3 bg-gray-50 border-b cursor-pointer flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition select-none">
+                <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                Filters
+                @php
+                    $activeFilterCount = count(array_filter($filters, fn($v) => $v !== null && $v !== ''));
+                @endphp
+                @if($activeFilterCount > 0)
+                    <span class="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">{{ $activeFilterCount }} active</span>
+                @endif
+            </summary>
+            <form method="GET" action="{{ route('jobs.index') }}" class="p-4">
+                @foreach(['sort','dir','per_page','search_id','search'] as $preserve)
+                    @if(request()->get($preserve))
+                        <input type="hidden" name="{{ $preserve }}" value="{{ request()->get($preserve) }}">
+                    @endif
+                @endforeach
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                        <select name="status" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="">All</option>
+                            <option value="none" {{ ($filters['status'] ?? '') === 'none' ? 'selected' : '' }}>None</option>
+                            <option value="completed" {{ ($filters['status'] ?? '') === 'completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="generating" {{ ($filters['status'] ?? '') === 'generating' ? 'selected' : '' }}>Generating</option>
+                            <option value="failed" {{ ($filters['status'] ?? '') === 'failed' ? 'selected' : '' }}>Failed</option>
+                        </select>
+                    </div>
+
+                    <!-- Type -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Type</label>
+                        <select name="type" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="">All</option>
+                            <option value="hourly" {{ ($filters['type'] ?? '') === 'hourly' ? 'selected' : '' }}>Hourly</option>
+                            <option value="fixed" {{ ($filters['type'] ?? '') === 'fixed' ? 'selected' : '' }}>Fixed Rate</option>
+                        </select>
+                    </div>
+
+                    <!-- Spend Currency -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Spend Currency</label>
+                        <select name="spend_currency" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="">All</option>
+                            @foreach($currencies as $currency)
+                                <option value="{{ $currency }}" {{ ($filters['spend_currency'] ?? '') === $currency ? 'selected' : '' }}>{{ $currency }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Ranges -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <!-- Budget -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Budget ($)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" name="budget_min" value="{{ $filters['budget_min'] ?? '' }}" placeholder="Min"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="number" name="budget_max" value="{{ $filters['budget_max'] ?? '' }}" placeholder="Max"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Applicants -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Applicants</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" name="applicants_min" value="{{ $filters['applicants_min'] ?? '' }}" placeholder="Min"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="number" name="applicants_max" value="{{ $filters['applicants_max'] ?? '' }}" placeholder="Max"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Spend -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Spend</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" name="spend_min" value="{{ $filters['spend_min'] ?? '' }}" placeholder="Min"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="number" name="spend_max" value="{{ $filters['spend_max'] ?? '' }}" placeholder="Max"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Posted Jobs -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Posted Jobs</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" name="posted_jobs_min" value="{{ $filters['posted_jobs_min'] ?? '' }}" placeholder="Min"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="number" name="posted_jobs_max" value="{{ $filters['posted_jobs_max'] ?? '' }}" placeholder="Max"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Hires -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Hires</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" name="hires_min" value="{{ $filters['hires_min'] ?? '' }}" placeholder="Min"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="number" name="hires_max" value="{{ $filters['hires_max'] ?? '' }}" placeholder="Max"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Reviews -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Reviews</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" name="reviews_min" value="{{ $filters['reviews_min'] ?? '' }}" placeholder="Min"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="number" name="reviews_max" value="{{ $filters['reviews_max'] ?? '' }}" placeholder="Max"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Feedback -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Feedback</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" name="feedback_min" value="{{ $filters['feedback_min'] ?? '' }}" placeholder="Min" step="0.1"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="number" name="feedback_max" value="{{ $filters['feedback_max'] ?? '' }}" placeholder="Max" step="0.1"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Posted At -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Posted At</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="date" name="posted_from" value="{{ $filters['posted_from'] ?? '' }}"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span class="text-gray-400 text-sm">—</span>
+                            <input type="date" name="posted_to" value="{{ $filters['posted_to'] ?? '' }}"
+                                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 border-t pt-4">
+                    <button type="submit"
+                            class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                        Apply Filters
+                    </button>
+                    <a href="{{ route('jobs.index', array_intersect_key(request()->query(), array_flip(['sort','dir','per_page']))) }}"
+                       class="px-4 py-2 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition">
+                        Clear Filters
+                    </a>
+                </div>
+            </form>
+        </details>
+    </div>
+
     <div class="bg-white rounded-xl shadow border overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left">

@@ -54,6 +54,104 @@ class JobController extends Controller
             });
         }
 
+        // Free-text search on title and description
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Status filter (latest ai_job_proposals.status)
+        if ($status = $request->get('status')) {
+            if ($status === 'none') {
+                $query->whereDoesntHave('aiProposals');
+            } else {
+                $query->whereHas('aiProposals', function ($q) use ($status) {
+                    $q->where('status', $status)
+                      ->whereRaw('ai_job_proposals.id = (SELECT MAX(id) FROM ai_job_proposals WHERE job_id = jobs.id)');
+                });
+            }
+        }
+
+        // Type filter: hourly or fixed
+        if ($type = $request->get('type')) {
+            if ($type === 'hourly') {
+                $query->where('is_hourly', 1);
+            } elseif ($type === 'fixed') {
+                $query->where('is_hourly', 0);
+            }
+        }
+
+        // Budget range (direct columns)
+        if ($budgetMin = $request->get('budget_min')) {
+            $query->where('budget_minimum', '>=', (float) $budgetMin);
+        }
+        if ($budgetMax = $request->get('budget_max')) {
+            $query->where('budget_maximum', '<=', (float) $budgetMax);
+        }
+
+        // Applicants range (JSON column)
+        if ($val = $request->get('applicants_min')) {
+            $query->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(json, '$.node.totalApplicants')) AS UNSIGNED) >= ?", [(int) $val]);
+        }
+        if ($val = $request->get('applicants_max')) {
+            $query->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(json, '$.node.totalApplicants')) AS UNSIGNED) <= ?", [(int) $val]);
+        }
+
+        // Spend range (DB column)
+        if ($val = $request->get('spend_min')) {
+            $query->where('client_total_spent', '>=', (float) $val);
+        }
+        if ($val = $request->get('spend_max')) {
+            $query->where('client_total_spent', '<=', (float) $val);
+        }
+
+        // Spend currency
+        if ($currency = $request->get('spend_currency')) {
+            $query->where('client_total_spent_currency', $currency);
+        }
+
+        // Posted jobs range
+        if ($val = $request->get('posted_jobs_min')) {
+            $query->where('client_total_posted_jobs', '>=', (int) $val);
+        }
+        if ($val = $request->get('posted_jobs_max')) {
+            $query->where('client_total_posted_jobs', '<=', (int) $val);
+        }
+
+        // Hires range
+        if ($val = $request->get('hires_min')) {
+            $query->where('client_total_hires', '>=', (int) $val);
+        }
+        if ($val = $request->get('hires_max')) {
+            $query->where('client_total_hires', '<=', (int) $val);
+        }
+
+        // Reviews range
+        if ($val = $request->get('reviews_min')) {
+            $query->where('client_total_reviews', '>=', (int) $val);
+        }
+        if ($val = $request->get('reviews_max')) {
+            $query->where('client_total_reviews', '<=', (int) $val);
+        }
+
+        // Feedback range
+        if ($val = $request->get('feedback_min')) {
+            $query->where('client_total_feedback', '>=', (float) $val);
+        }
+        if ($val = $request->get('feedback_max')) {
+            $query->where('client_total_feedback', '<=', (float) $val);
+        }
+
+        // Posted date range
+        if ($val = $request->get('posted_from')) {
+            $query->whereDate('created_at', '>=', $val);
+        }
+        if ($val = $request->get('posted_to')) {
+            $query->whereDate('created_at', '<=', $val);
+        }
+
         // Apply custom sorting
         switch ($sortBy) {
             case 'title':
@@ -145,8 +243,28 @@ class JobController extends Controller
 
         $jobs = $query->paginate($perPage)->withQueryString();
         $allSearches = JobSearch::orderBy('name')->withCount('jobs')->get();
+        $currencies = Job::select('client_total_spent_currency')
+            ->distinct()
+            ->whereNotNull('client_total_spent_currency')
+            ->orderBy('client_total_spent_currency')
+            ->pluck('client_total_spent_currency');
 
-        return view('jobs.index', compact('jobs', 'sortBy', 'sortDir', 'allSearches', 'selectedSearchId'));
+        $filters = $request->only([
+            'search', 'status', 'type',
+            'budget_min', 'budget_max',
+            'applicants_min', 'applicants_max',
+            'spend_min', 'spend_max', 'spend_currency',
+            'posted_jobs_min', 'posted_jobs_max',
+            'hires_min', 'hires_max',
+            'reviews_min', 'reviews_max',
+            'feedback_min', 'feedback_max',
+            'posted_from', 'posted_to',
+        ]);
+
+        return view('jobs.index', compact(
+            'jobs', 'sortBy', 'sortDir', 'allSearches', 'selectedSearchId',
+            'currencies', 'filters'
+        ));
     }
 
 
