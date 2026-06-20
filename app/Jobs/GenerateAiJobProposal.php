@@ -35,7 +35,7 @@ class GenerateAiJobProposal implements ShouldQueue
     public function handle(): void
     {
         $provider = $this->aiJobProposal->provider;
-        $apiKey = config("services.ai.{$provider}.key", 'unknown');
+        $apiKey = config("services.ai.{$provider}.key", 'unknown') ?? 'unknown';
 
         // Redis Keys (isolated per provider + key)
         $rateLimitKey = "ai_rate:{$provider}:" . md5($apiKey);
