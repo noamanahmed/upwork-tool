@@ -28,9 +28,23 @@ class GenerateAiJobProposal implements ShouldQueue
      */
     public $backoff = 15;
 
+    /**
+     * Current re-queue attempt (independent of Laravel's $tries).
+     * Starts at 1, increments each time reQueueJob() is called.
+     */
+    public int $aiCurrentAttempt = 1;
+
+    /**
+     * Max delay cap for exponential backoff (seconds).
+     */
+    protected int $maxBackoff = 600;
+
     public function __construct(
-        public AiJobProposal $aiJobProposal
-    ) {}
+        public AiJobProposal $aiJobProposal,
+        int $aiCurrentAttempt = 1,
+    ) {
+        $this->aiCurrentAttempt = $aiCurrentAttempt;
+    }
 
     public function handle(): void
     {
@@ -173,7 +187,7 @@ class GenerateAiJobProposal implements ShouldQueue
     }
 
     /**
-     * Re-dispatch job with delay
+     * Re-dispatch job with exponential backoff for rate-limit reasons.
      */
     protected function reQueueJob(string $reason = 'unknown', array $context = []): void
     {
@@ -181,11 +195,25 @@ class GenerateAiJobProposal implements ShouldQueue
             'reason' => $reason,
             'provider' => $this->aiJobProposal->provider,
             'ai_job_proposal_id' => $this->aiJobProposal->id,
+            'attempt' => $this->aiCurrentAttempt,
         ], $context));
 
-        static::dispatch($this->aiJobProposal)
-            ->delay(now()->addSeconds(10));
+        $delay = match ($reason) {
+            'rate_limit_exceeded' => $this->getRateLimitBackoff(),
+            default               => 10,
+        };
+
+        static::dispatch($this->aiJobProposal, $this->aiCurrentAttempt + 1)
+            ->delay(now()->addSeconds($delay));
 
         $this->delete();
+    }
+
+    /**
+     * Exponential backoff: 10 → 20 → 40 → 80 → 160 → 320 → 600 (cap)
+     */
+    protected function getRateLimitBackoff(): int
+    {
+        return min(10 * (2 ** ($this->aiCurrentAttempt - 1)), $this->maxBackoff);
     }
 }
