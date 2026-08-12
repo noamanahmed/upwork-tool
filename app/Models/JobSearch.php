@@ -10,6 +10,11 @@ class JobSearch extends BaseModel
         'description',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function jobs()
     {
         return $this->belongsToMany(Job::class,'job_searches_jobs_pivot')->withPivot(['is_slack_webhook_sent']);

@@ -31,6 +31,33 @@ services:
             timeout: 5s
             retries: 3
 
+    horizon:
+        build:
+            context: .
+            target: development
+            args:
+                USER_ID: $UID
+                GROUP_ID: $GID
+        image: serversideup/php:8.3-fpm-nginx
+        restart: unless-stopped
+        command: ["php", "/var/www/html/artisan", "horizon:work"]
+        environment:
+            PUID: $UID
+            PGID: $GID
+            PHP_OPCACHE_ENABLE: 0
+            AUTORUN_ENABLED: "false"
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            app:
+                condition: service_healthy
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
