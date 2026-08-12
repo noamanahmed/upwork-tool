@@ -3,6 +3,11 @@
 ############################################
 FROM serversideup/php:8.3-fpm-nginx-bookworm AS base
 
+# Install the intl extension (required by Filament)
+USER root
+RUN install-php-extensions intl
+USER www-data
+
 ############################################
 # Development Image
 ############################################
