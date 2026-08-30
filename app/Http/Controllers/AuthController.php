@@ -67,7 +67,7 @@ class AuthController extends Controller
                 'auth0_id' => $auth0User->getId(),
             ]);
 
-            return redirect()->intended('/jobs');
+            return redirect()->intended('/admin/jobs');
 
         } catch (\Exception $e) {
             Log::error('Auth0 callback error', [
@@ -75,7 +75,7 @@ class AuthController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect('/login')->withErrors([
+            return redirect('/admin/login')->withErrors([
                 'auth0' => 'Failed to authenticate with Auth0. Please try again.',
             ]);
         }
@@ -90,6 +90,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/jobs');
+        return redirect('/admin/login');
     }
 }

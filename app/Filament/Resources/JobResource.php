@@ -3,8 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\JobResource\Pages;
-use App\Models\AiJobProposal;
 use App\Models\Job;
+use Filament\Forms;
 use Filament\Infolists;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -65,7 +65,7 @@ class JobResource extends Resource
                     ->label('Client Spend')
                     ->formatStateUsing(function ($state, Job $record) {
                         $currency = $record->client_total_spent_currency ?? 'USD';
-                        return number_format($state) . ' ' . $currency;
+                        return number_format((float) $state) . ' ' . $currency;
                     })
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -92,12 +92,17 @@ class JobResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('searches')
+                    ->relationship('searches', 'name')
+                    ->label('Search Category'),
                 SelectFilter::make('is_hourly')
+                    ->label('Job Type')
                     ->options([
                         true => 'Hourly',
                         false => 'Fixed Rate',
                     ]),
                 SelectFilter::make('is_payment_verified')
+                    ->label('Payment Verified')
                     ->options([
                         true => 'Verified',
                         false => 'Not Verified',
@@ -108,13 +113,70 @@ class JobResource extends Resource
                         true => 'Sent',
                         false => 'Not Sent',
                     ]),
-                Tables\Filters\Filter::make('has_ai_proposal')
-                    ->label('Has AI Proposal')
-                    ->query(fn ($query) => $query->whereHas('aiProposals')),
+                SelectFilter::make('proposal_status')
+                    ->label('AI Proposal Status')
+                    ->options([
+                        'none' => 'No Proposal Generated',
+                        'completed' => 'Completed',
+                        'pending' => 'Pending',
+                        'failed' => 'Failed',
+                    ])
+                    ->query(function ($query, array $data) {
+                        if (empty($data['value'])) {
+                            return $query;
+                        }
+                        if ($data['value'] === 'none') {
+                            return $query->whereDoesntHave('aiProposals');
+                        }
+                        return $query->whereHas('aiProposals', function ($q) use ($data) {
+                            $q->where('status', $data['value'])
+                              ->whereRaw('ai_job_proposals.id = (SELECT MAX(id) FROM ai_job_proposals WHERE job_id = jobs.id)');
+                        });
+                    }),
+                Tables\Filters\Filter::make('budget')
+                    ->form([
+                        Forms\Components\TextInput::make('budget_min')->numeric()->label('Min Budget'),
+                        Forms\Components\TextInput::make('budget_max')->numeric()->label('Max Budget'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['budget_min'], fn ($q) => $q->where('budget_minimum', '>=', (float) $data['budget_min']))
+                            ->when($data['budget_max'], fn ($q) => $q->where('budget_maximum', '<=', (float) $data['budget_max']));
+                    }),
+                Tables\Filters\Filter::make('applicants')
+                    ->form([
+                        Forms\Components\TextInput::make('applicants_min')->numeric()->label('Min Applicants'),
+                        Forms\Components\TextInput::make('applicants_max')->numeric()->label('Max Applicants'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['applicants_min'], fn ($q) => $q->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(json, '$.node.totalApplicants')) AS UNSIGNED) >= ?", [(int) $data['applicants_min']]))
+                            ->when($data['applicants_max'], fn ($q) => $q->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(json, '$.node.totalApplicants')) AS UNSIGNED) <= ?", [(int) $data['applicants_max']]));
+                    }),
+                Tables\Filters\Filter::make('client_spend')
+                    ->form([
+                        Forms\Components\TextInput::make('spend_min')->numeric()->label('Min Spend'),
+                        Forms\Components\TextInput::make('spend_max')->numeric()->label('Max Spend'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['spend_min'], fn ($q) => $q->where('client_total_spent', '>=', (float) $data['spend_min']))
+                            ->when($data['spend_max'], fn ($q) => $q->where('client_total_spent', '<=', (float) $data['spend_max']));
+                    }),
+                Tables\Filters\Filter::make('client_hires')
+                    ->form([
+                        Forms\Components\TextInput::make('hires_min')->numeric()->label('Min Hires'),
+                        Forms\Components\TextInput::make('hires_max')->numeric()->label('Max Hires'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['hires_min'], fn ($q) => $q->where('client_total_hires', '>=', (int) $data['hires_min']))
+                            ->when($data['hires_max'], fn ($q) => $q->where('client_total_hires', '<=', (int) $data['hires_max']));
+                    }),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('created_from'),
-                        \Filament\Forms\Components\DatePicker::make('created_until'),
+                        Forms\Components\DatePicker::make('created_from')->label('Posted From'),
+                        Forms\Components\DatePicker::make('created_until')->label('Posted To'),
                     ])
                     ->query(function ($query, array $data) {
                         return $query
@@ -123,7 +185,18 @@ class JobResource extends Resource
                     }),
             ])
             ->actions([
+                Tables\Actions\Action::make('proposal')
+                    ->label('AI Proposal')
+                    ->icon('heroicon-o-sparkles')
+                    ->color('success')
+                    ->url(fn (Job $record) => Pages\ViewJobProposal::getUrl(['record' => $record])),
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('upwork')
+                    ->label('Upwork')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('gray')
+                    ->url(fn (Job $record) => "https://www.upwork.com/jobs/~" . ltrim($record->ciphertext, '~'))
+                    ->openUrlInNewTab(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([]),
@@ -252,6 +325,7 @@ class JobResource extends Resource
         return [
             'index' => Pages\ListJobs::route('/'),
             'view' => Pages\ViewJob::route('/{record}'),
+            'proposal' => Pages\ViewJobProposal::route('/{record}/proposal'),
         ];
     }
 }

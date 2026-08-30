@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(\App\Filament\Pages\Auth\Login::class)
             ->brandName('Upwork Tool Admin')
             ->colors([
                 'primary' => Color::Blue,
