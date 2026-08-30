@@ -8,6 +8,7 @@ use App\Enums\UserTypeEnum;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -17,17 +18,29 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements MustVerifyEmail,CanResetPassword,FilamentUser
+class User extends Authenticatable implements MustVerifyEmail, CanResetPassword, FilamentUser, HasName
 {
     protected $guard = 'api';
 
     const DEVICE_NAME = 'web';
 
-    use HasApiTokens,HasRoles, HasFactory, Notifiable;
+    use HasApiTokens, HasRoles, HasFactory, Notifiable;
 
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
+    }
+
+    public function getFilamentName(): string
+    {
+        $name = trim("{$this->first_name} {$this->last_name}");
+
+        return !empty($name) ? $name : ($this->email ?? 'User');
+    }
+
+    public function getNameAttribute(): string
+    {
+        return $this->getFilamentName();
     }
 
     /**
