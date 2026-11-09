@@ -22,7 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if (file_exists(app_path('helpers.php'))) {
+            require_once app_path('helpers.php');
+        }
     }
 
     /**
@@ -31,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if(config('app.debug')) $this->bootDebug();
+
+        \App\Models\Setting::applyToConfig();
 
         Schema::defaultStringLength(191);
         // Add custom methods to all resource groups in routes

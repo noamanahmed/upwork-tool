@@ -16,8 +16,13 @@ class SettingFactory extends Factory
      */
     public function definition(): array
     {
+        $word = $this->faker->unique()->word . '_' . $this->faker->randomNumber(4);
         return [
-            'name' => $this->faker->unique()->word,
+            'key' => $word,
+            'name' => $word,
+            'value' => $this->faker->sentence,
+            'default_value' => null,
+            'is_encrypted' => false,
             'description' => $this->faker->text,
         ];
     }

@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->index();
-            $table->string('value');
+            $table->string('key')->unique()->nullable();
+            $table->string('name')->nullable()->index();
+            $table->longText('value')->nullable();
+            $table->longText('default_value')->nullable();
+            $table->boolean('is_encrypted')->default(false);
+            $table->text('description')->nullable();
             $table->datetimes();
         });
     }
