@@ -14,6 +14,8 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class JobResource extends Resource
 {
@@ -29,66 +31,164 @@ class JobResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('posted_at')
+                    ->label('Posted')
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        return $query
+                            ->orderByRaw("CASE WHEN posted_at IS NOT NULL AND posted_at > '1970-01-01 00:00:01' THEN 0 ELSE 1 END")
+                            ->orderBy('posted_at', $direction)
+                            ->orderBy('created_at', 'desc');
+                    })
+                    ->formatStateUsing(function ($state, Job $record) {
+                        if (!$record->posted_at || $record->posted_at->year <= 2000) {
+                            return 'N/A';
+                        }
+                        return $record->posted_at->diffForHumans();
+                    })
+                    ->tooltip(function (Job $record) {
+                        if (!$record->posted_at || $record->posted_at->year <= 2000) {
+                            return null;
+                        }
+                        return $record->posted_at->format('M d, Y H:i:s');
+                    })
+                    ->color(function (Job $record) {
+                        if (!$record->posted_at || $record->posted_at->year <= 2000) {
+                            return 'gray';
+                        }
+                        return $record->posted_at->diffInHours() < 2 ? 'success' : 'gray';
+                    }),
+
                 TextColumn::make('title')
+                    ->label('Title')
                     ->searchable()
                     ->sortable()
-                    ->limit(60),
-                TextColumn::make('upwork_id')
-                    ->label('Upwork ID')
-                    ->searchable()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->limit(65)
+                    ->description(fn (Job $record) => Str::limit(strip_tags($record->description), 80))
+                    ->wrap(),
+
+                TextColumn::make('searches.name')
+                    ->label('Searches')
+                    ->badge()
+                    ->color('info')
+                    ->limitList(2)
+                    ->expandableLimitedList()
+                    ->toggleable(),
+
                 TextColumn::make('budget_minimum')
                     ->label('Budget')
                     ->formatStateUsing(function ($state, Job $record) {
-                        $max = $record->budget_maximum;
-                        if ($state === $max) {
-                            return '$' . number_format($state);
+                        $min = (float) $state;
+                        $max = (float) $record->budget_maximum;
+
+                        if ($record->is_hourly) {
+                            if ($min === $max || $max == 0) {
+                                return '$' . number_format($min) . '/hr';
+                            }
+                            return '$' . number_format($min) . ' - $' . number_format($max) . '/hr';
                         }
-                        return '$' . number_format($state) . ' - $' . number_format($max);
+
+                        if ($min === $max || $max == 0) {
+                            return '$' . number_format($min);
+                        }
+                        return '$' . number_format($min) . ' - $' . number_format($max);
                     })
                     ->sortable(),
+
                 TextColumn::make('is_hourly')
                     ->label('Type')
                     ->formatStateUsing(fn (bool $state) => $state ? 'Hourly' : 'Fixed')
                     ->badge()
                     ->color(fn (bool $state) => $state ? 'info' : 'success')
                     ->sortable(),
-                TextColumn::make('location')
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('client_total_hires')
-                    ->label('Client Hires')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('client_total_spent')
                     ->label('Client Spend')
                     ->formatStateUsing(function ($state, Job $record) {
-                        $currency = $record->client_total_spent_currency ?? 'USD';
-                        return number_format((float) $state) . ' ' . $currency;
+                        if ($state === null || (float) $state === 0.0) {
+                            return '$0';
+                        }
+                        $amount = (float) $state;
+                        if ($amount >= 1000000) {
+                            return '$' . number_format($amount / 1000000, 1) . 'M';
+                        }
+                        if ($amount >= 1000) {
+                            return '$' . number_format($amount / 1000, 1) . 'k';
+                        }
+                        return '$' . number_format($amount);
                     })
+                    ->tooltip(fn (Job $record) => number_format((float) $record->client_total_spent, 2) . ' ' . ($record->client_total_spent_currency ?? 'USD'))
+                    ->color(fn ($state) => (float) $state >= 10000 ? 'success' : ((float) $state >= 1000 ? 'info' : 'gray'))
+                    ->sortable(),
+
+                TextColumn::make('client_total_hires')
+                    ->label('Hires')
+                    ->formatStateUsing(fn ($state) => number_format((int) $state))
+                    ->sortable(),
+
+                TextColumn::make('client_total_feedback')
+                    ->label('Rating')
+                    ->formatStateUsing(function ($state, Job $record) {
+                        if ($state === null || (float) $state === 0.0) {
+                            return 'No reviews';
+                        }
+                        $score = number_format((float) $state, 1);
+                        $reviews = $record->client_total_reviews;
+                        return $reviews ? "★ {$score} ({$reviews})" : "★ {$score}";
+                    })
+                    ->color(fn ($state) => (float) $state >= 4.5 ? 'success' : ((float) $state >= 4.0 ? 'warning' : 'gray'))
+                    ->sortable(),
+
+                TextColumn::make('client_total_posted_jobs')
+                    ->label('Jobs Posted')
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((int) $state) : 'N/A')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 IconColumn::make('is_payment_verified')
-                    ->label('Payment Verified')
+                    ->label('Payment')
                     ->boolean()
                     ->sortable(),
-                IconColumn::make('is_slack_webhook_sent')
-                    ->label('Slack Sent')
-                    ->boolean()
-                    ->sortable(),
+
+                TextColumn::make('location')
+                    ->label('Location')
+                    ->searchable()
+                    ->toggleable(),
+
+                TextColumn::make('skills.name')
+                    ->label('Skills')
+                    ->badge()
+                    ->color('gray')
+                    ->limitList(3)
+                    ->expandableLimitedList()
+                    ->toggleable(),
+
                 TextColumn::make('ai_proposals_count')
                     ->label('AI Proposals')
                     ->counts('aiProposals')
+                    ->badge()
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray')
                     ->sortable(),
-                TextColumn::make('searches_count')
-                    ->label('Matched Searches')
-                    ->counts('searches')
+
+                IconColumn::make('is_slack_webhook_sent')
+                    ->label('Slack')
+                    ->boolean()
+                    ->sortable(),
+
+                TextColumn::make('created_at')
+                    ->label('Discovered')
+                    ->dateTime('M d, Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                TextColumn::make('upwork_id')
+                    ->label('Upwork ID')
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
+
+                TextColumn::make('ciphertext')
+                    ->label('Ciphertext')
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
@@ -173,10 +273,20 @@ class JobResource extends Resource
                             ->when($data['hires_min'], fn ($q) => $q->where('client_total_hires', '>=', (int) $data['hires_min']))
                             ->when($data['hires_max'], fn ($q) => $q->where('client_total_hires', '<=', (int) $data['hires_max']));
                     }),
+                Tables\Filters\Filter::make('posted_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('posted_from')->label('Posted From (Upwork)'),
+                        Forms\Components\DatePicker::make('posted_until')->label('Posted To (Upwork)'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['posted_from'], fn ($q) => $q->whereDate('posted_at', '>=', $data['posted_from']))
+                            ->when($data['posted_until'], fn ($q) => $q->whereDate('posted_at', '<=', $data['posted_until']));
+                    }),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
-                        Forms\Components\DatePicker::make('created_from')->label('Posted From'),
-                        Forms\Components\DatePicker::make('created_until')->label('Posted To'),
+                        Forms\Components\DatePicker::make('created_from')->label('Discovered From'),
+                        Forms\Components\DatePicker::make('created_until')->label('Discovered To'),
                     ])
                     ->query(function ($query, array $data) {
                         return $query
@@ -201,7 +311,13 @@ class JobResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('posted_at', 'desc');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['searches', 'skills', 'aiProposals']);
     }
 
     public static function infolist(Infolist $infolist): Infolist

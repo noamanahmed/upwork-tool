@@ -12,6 +12,22 @@ class Job extends BaseModel
         'description',
     ];
 
+    protected $casts = [
+        'posted_at' => 'datetime',
+        'is_hourly' => 'boolean',
+        'is_payment_verified' => 'boolean',
+        'is_slack_webhook_sent' => 'boolean',
+        'is_activity_job_dispatched' => 'boolean',
+        'budget_minimum' => 'double',
+        'budget_maximum' => 'double',
+        'client_total_spent' => 'double',
+        'client_total_feedback' => 'double',
+        'client_total_hires' => 'integer',
+        'client_total_reviews' => 'integer',
+        'client_total_posted_jobs' => 'integer',
+        'json' => 'array',
+    ];
+
 
     function getSlackNotificationMessageAttribute()
     {
