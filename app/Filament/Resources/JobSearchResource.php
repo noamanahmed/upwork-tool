@@ -7,9 +7,11 @@ use App\Filament\Resources\JobSearchResource\Pages;
 use App\Models\JobSearch;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 class JobSearchResource extends Resource
 {
@@ -195,11 +197,51 @@ class JobSearchResource extends Resource
                     ->query(fn ($query) => $query->whereNotNull('slack_webhook_url')),
             ])
             ->actions([
+                Tables\Actions\Action::make('searchJobs')
+                    ->label('Search Jobs')
+                    ->icon('heroicon-o-magnifying-glass')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (JobSearch $record) => "Run Search: {$record->name}")
+                    ->modalDescription('This will immediately dispatch a background queue job to search Upwork for matching jobs, bypassing scheduler restrictions.')
+                    ->modalSubmitActionLabel('Dispatch Search Now')
+                    ->action(function (JobSearch $record) {
+                        Cache::forget('job_service_dispatch_job_' . $record->id);
+                        \App\Jobs\JobSearch::dispatch($record);
+
+                        Notification::make()
+                            ->title('Job Search Dispatched')
+                            ->body("Search job for '{$record->name}' has been queued in the background.")
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('searchSelected')
+                        ->label('Run Selected Searches')
+                        ->icon('heroicon-o-magnifying-glass')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Run Selected Job Searches')
+                        ->modalDescription('This will dispatch background queue jobs for all selected search configurations, bypassing scheduler restrictions.')
+                        ->modalSubmitActionLabel('Dispatch Searches Now')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $count = 0;
+                            foreach ($records as $record) {
+                                Cache::forget('job_service_dispatch_job_' . $record->id);
+                                \App\Jobs\JobSearch::dispatch($record);
+                                $count++;
+                            }
+
+                            Notification::make()
+                                ->title('Job Searches Dispatched')
+                                ->body("{$count} search job(s) have been queued in the background.")
+                                ->success()
+                                ->send();
+                        }),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
