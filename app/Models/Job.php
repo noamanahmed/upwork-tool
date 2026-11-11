@@ -137,6 +137,14 @@ class Job extends BaseModel
     }
 
     /**
+     * Canonical Upwork job posting URL.
+     */
+    public function getUpworkUrl(): string
+    {
+        return 'https://www.upwork.com/jobs/~' . ltrim((string) $this->ciphertext, '~');
+    }
+
+    /**
      * Get a temporary public proposal URL (valid 24 hours).
      * URL contains only job identifier - proposal is fetched server-side.
      */

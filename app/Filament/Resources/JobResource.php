@@ -308,7 +308,7 @@ class JobResource extends Resource
                     ->label('Upwork')
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('gray')
-                    ->url(fn (Job $record) => "https://www.upwork.com/jobs/~" . ltrim($record->ciphertext, '~'))
+                    ->url(fn (Job $record) => $record->getUpworkUrl())
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
@@ -337,7 +337,9 @@ class JobResource extends Resource
                             ->label('Upwork ID'),
                         TextEntry::make('ciphertext')
                             ->label('Ciphertext')
-                            ->copyable(),
+                            ->copyable()
+                            ->url(fn (Job $record) => $record->getUpworkUrl())
+                            ->openUrlInNewTab(),
                         TextEntry::make('created_at')
                             ->dateTime(),
                     ])->columns(2),
