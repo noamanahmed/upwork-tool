@@ -66,6 +66,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 'Upwork',
+                'Controls',
                 'Settings',
             ]);
     }
