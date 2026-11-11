@@ -571,7 +571,9 @@ class UpWorkService extends BaseService {
         $rssJobs = [];
         if(empty($rssData['entries']))
         {
-            abort(429);
+            Log::warning('RSS feed returned no entries', ['url' => $url]);
+
+            return [];
         }
         foreach ($rssData['entries'] ?? [] as $entry)
         {

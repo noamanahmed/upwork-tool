@@ -2,10 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Job;
-use App\Models\JobSearch;
-use App\Services\ThirdParty\SlackService;
-use Cache;
+use App\Jobs\SendJobSlackNotification;
+use App\Models\JobSearchPivot;
 use Illuminate\Console\Command;
 
 class SendJobSlackNotifications extends Command
@@ -22,49 +20,32 @@ class SendJobSlackNotifications extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Re-dispatches Slack notifications that were never delivered';
+
+    public const MIN_AGE_MINUTES = 2;
+
+    public const MAX_ATTEMPTS = 5;
+
+    public const BATCH_SIZE = 200;
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $jobSearches = JobSearch::whereHas('latestJobs',function($query){
-            return $query->where('job_searches_jobs_pivot.is_slack_webhook_sent',0);
-        })->take(10)->with(['latestJobs'])->get();
+        $pending = JobSearchPivot::query()
+            ->where('is_slack_webhook_sent', false)
+            ->where('slack_attempts', '<', self::MAX_ATTEMPTS)
+            ->where('created_at', '<', now()->subMinutes(self::MIN_AGE_MINUTES))
+            ->orderBy('id')
+            ->limit(self::BATCH_SIZE)
+            ->get(['job_id', 'job_search_id']);
 
-        $webhookSent = [];
-        $locks = [];
-        foreach($jobSearches as $jobSearch)
-        {
-            foreach($jobSearch->latestJobs as $job)
-            {
-
-                $lock = Cache::lock('slack_job_notification_for_job_' . $job->id.'_job_search_'.$jobSearch->id, 30);
-                if (!$lock->get()) continue;
-                $job->refresh();
-                if($job->pivot->is_slack_webhook_sent) continue;
-                if(empty($jobSearch->slack_webhook_url)) continue;
-                app(SlackService::class)->setWebhookUrl($jobSearch->slack_webhook_url)->sendNotification($job->slack_notification_message);
-                $webhookSent[] = $job->pivot;
-                $locks[] = $lock;
-            }
+        foreach ($pending as $pivot) {
+            SendJobSlackNotification::dispatch($pivot->job_id, $pivot->job_search_id)
+                ->onQueue('notifications');
         }
 
-
-        foreach($webhookSent as $pivot)
-        {
-            $pivot->update([
-                'is_slack_webhook_sent' => 1
-            ]);
-        }
-
-
-        foreach($locks as $lock)
-        {
-            $lock->release();
-        }
-
-
+        $this->info("Dispatched {$pending->count()} pending Slack notification job(s).");
     }
 }

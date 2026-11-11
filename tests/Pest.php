@@ -68,6 +68,78 @@ function apiPrefix($url)
     return 'api/v1/'.$url;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Upwork pipeline helpers
+|--------------------------------------------------------------------------
+*/
+
+function upworkTestUser(): int
+{
+    return \Illuminate\Support\Facades\DB::table('users')->insertGetId([
+        'email' => 'upwork-test-' . uniqid() . '@example.com',
+        'password' => bcrypt('secret'),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
+function upworkTestJobSearch(
+    ?int $userId = null,
+    string $webhook = 'https://hooks.slack.test/services/T/B/X'
+): \App\Models\JobSearch {
+    $id = \Illuminate\Support\Facades\DB::table('job_searches')->insertGetId([
+        'user_id' => $userId ?? upworkTestUser(),
+        'name' => 'Test search',
+        'q' => 'laravel',
+        'slack_webhook_url' => $webhook,
+        'status' => \App\Enums\JobSearchStatusEnum::ACTIVE->value,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return \App\Models\JobSearch::findOrFail($id);
+}
+
+function upworkTestJob(int $upworkId = 1001): \App\Models\Job
+{
+    \Illuminate\Support\Facades\DB::table('jobs')->insert([
+        'upwork_id' => $upworkId,
+        'ciphertext' => '~01' . $upworkId,
+        'title' => 'Laravel job ' . $upworkId,
+        'description' => 'Build something',
+        'json' => json_encode(['node' => ['id' => $upworkId]]),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return \App\Models\Job::where('upwork_id', $upworkId)->firstOrFail();
+}
+
+function upworkTestEdge(int $upworkId = 1001): array
+{
+    return [
+        'node' => [
+            'id' => $upworkId,
+            'ciphertext' => '~01' . $upworkId,
+            'job' => [
+                'content' => [
+                    'title' => 'Laravel job ' . $upworkId,
+                    'description' => 'Build something',
+                ],
+                'contractTerms' => ['contractType' => 'FIXED'],
+            ],
+            'client' => [
+                'location' => ['city' => 'Lahore', 'state' => 'Punjab', 'country' => 'PK'],
+                'verificationStatus' => 'VERIFIED',
+                'totalSpent' => ['rawValue' => 100, 'currency' => 'USD'],
+            ],
+            'amount' => ['displayValue' => 500],
+            'publishedDateTime' => '2026-11-11T10:00:00Z',
+        ],
+    ];
+}
+
 
 beforeEach(function(){
     $this->artisan('migrate:fresh');

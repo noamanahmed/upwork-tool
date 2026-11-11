@@ -8,7 +8,6 @@ use App\Models\JobSearch;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Support\Facades\Cache;
 
 class ListJobSearches extends ListRecords
 {
@@ -46,8 +45,7 @@ class ListJobSearches extends ListRecords
 
                     $count = 0;
                     foreach ($searches as $search) {
-                        Cache::forget('job_service_dispatch_job_' . $search->id);
-                        \App\Jobs\JobSearch::dispatch($search);
+                        \App\Jobs\JobSearch::dispatch($search->id)->onQueue('scraping');
                         $count++;
                     }
 

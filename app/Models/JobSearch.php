@@ -17,11 +17,12 @@ class JobSearch extends BaseModel
 
     public function jobs()
     {
-        return $this->belongsToMany(Job::class,'job_searches_jobs_pivot')->withPivot(['is_slack_webhook_sent']);
+        return $this->belongsToMany(Job::class,'job_searches_jobs_pivot')
+            ->withPivot(['is_slack_webhook_sent', 'slack_sent_at']);
     }
 
     public function latestJobs()
     {
-        return $this->jobs()->take(100)->latest();
+        return $this->jobs()->orderByDesc('jobs.created_at');
     }
 }

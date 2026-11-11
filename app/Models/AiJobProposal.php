@@ -8,6 +8,7 @@ class AiJobProposal extends BaseModel
 {
     protected $casts = [
         'generated_at' => 'datetime',
+        'queued_at' => 'datetime',
     ];
 
     protected $fillable = [
@@ -19,6 +20,11 @@ class AiJobProposal extends BaseModel
         'model',
         'conversation_id',
         'description',
+        'prompt',
+        'instructions',
+        'attempts',
+        'last_error',
+        'queued_at',
         'generated_at',
     ];
 

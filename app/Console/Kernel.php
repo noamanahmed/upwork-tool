@@ -15,19 +15,22 @@ class Kernel extends ConsoleKernel
     {
         if ($this->shouldRunUpworkTasks()) {
 
-            $schedule->command('upwork:search')->everyTenSeconds();
-            // $schedule->command('upwork:rss-search')->everyTenSeconds();
+            // Discovery only queues work. Scraping, Slack and AI run on
+            // separate Horizon queues, so these commands return immediately.
+            $schedule->command('upwork:search')->everyTenSeconds()->withoutOverlapping(1);
+            // $schedule->command('upwork:rss-search')->everyTenSeconds()->withoutOverlapping(1);
 
-            $schedule->command('upwork:send-slack-notifications')->everyFiveSeconds();
-            // $schedule->command('upwork:send-rss-slack-notifications')->everyFiveSeconds();
-
-            $schedule->command('upwork:proposals')->everyFifteenMinutes();
-
-            $schedule->command('upwork:generate-ai-proposals')->everyMinute();
+            $schedule->command('upwork:proposals')->everyFifteenMinutes()->withoutOverlapping();
         }
+
+        // Safety nets. They stay outside the scrape window so queued work drains.
+        $schedule->command('upwork:send-slack-notifications')->everyFiveMinutes()->withoutOverlapping();
+        $schedule->command('upwork:generate-ai-proposals')->everyTenMinutes()->withoutOverlapping();
+
+        $schedule->command('horizon:snapshot')->everyFiveMinutes();
+        $schedule->command('queue:prune-failed --hours=168')->daily();
         $schedule->command('upwork:prune-telescope')->everyFifteenMinutes();
         $schedule->command('telescope:prune --hours=8')->hourly();
-
     }
 
     /**

@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\JobSearchStatusEnum;
 use App\Jobs\JobSearch as JobsJobSearch;
 use App\Models\JobSearch as ModelsJobSearch;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class JobSearch extends Command
 {
@@ -29,19 +29,15 @@ class JobSearch extends Command
      */
     public function handle()
     {
-        $JobSearches = Cache::remember('job_searches', 15 * 60, function () {
-            return ModelsJobSearch::query()->get();
+        $jobSearches = Cache::remember('job_searches_active', 15 * 60, function () {
+            return ModelsJobSearch::query()
+                ->where('status', JobSearchStatusEnum::ACTIVE->value)
+                ->get();
         });
 
-        foreach($JobSearches as $search)
-        {
-            $lock = Cache::lock('job_service_dispatch_job_'.$search->id,30);
-            if ($lock->get()) {
-                $this->line('Acquired JOB Lock for Search ID:'.$search->id);
-                JobsJobSearch::dispatch($search);
-            }else{
-                $this->line('Cannot Acquire JOB Lock for Search ID:'.$search->id);
-            }
+        foreach ($jobSearches as $search) {
+            JobsJobSearch::dispatch($search->id)->onQueue('scraping');
+            $this->line('Dispatched search ID: ' . $search->id);
         }
     }
 }

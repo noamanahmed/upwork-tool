@@ -2,31 +2,36 @@
 
 namespace App\Jobs;
 
+use App\Ai\Agents\AiJobProposalAgent;
+use App\Enums\AiProposalStatusEnum;
 use App\Models\AiJobProposal;
 use App\Models\Job;
-use App\Ai\Agents\AiJobProposalAgent;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
+use Throwable;
 
 class GenerateAiJobProposal implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $queue = 'ai';
+
     /**
-     * Retry attempts
+     * Framework retries for real API exceptions.
      */
     public $tries = 3;
 
-    /**
-     * Retry delay (seconds)
-     */
-    public $backoff = 15;
+    public $backoff = [15, 60, 180];
+
+    public $timeout = 150;
+
+    public $failOnTimeout = true;
 
     /**
      * Current re-queue attempt (independent of Laravel's $tries).
@@ -35,12 +40,41 @@ class GenerateAiJobProposal implements ShouldQueue
     public int $aiCurrentAttempt = 1;
 
     /**
+     * Stop re-queueing after this many rate-limit attempts.
+     */
+    protected const MAX_REQUEUES = 20;
+
+    /**
      * Max delay cap for exponential backoff (seconds).
      */
-    protected int $maxBackoff = 600;
+    protected const MAX_BACKOFF = 600;
+
+    /**
+     * Atomic sliding-window rate limiter.
+     * KEYS[1] = key, ARGV[1] = now (seconds), ARGV[2] = window (seconds),
+     * ARGV[3] = limit, ARGV[4] = unique member
+     */
+    protected const RATE_LIMIT_SCRIPT = <<<'LUA'
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local window = tonumber(ARGV[2])
+local limit = tonumber(ARGV[3])
+local member = ARGV[4]
+
+redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
+
+if redis.call('ZCARD', key) >= limit then
+    return 0
+end
+
+redis.call('ZADD', key, now, member)
+redis.call('PEXPIRE', key, window * 1000)
+
+return 1
+LUA;
 
     public function __construct(
-        public AiJobProposal $aiJobProposal,
+        public int $aiJobProposalId,
         int $aiCurrentAttempt = 1,
     ) {
         $this->aiCurrentAttempt = $aiCurrentAttempt;
@@ -48,162 +82,124 @@ class GenerateAiJobProposal implements ShouldQueue
 
     public function handle(): void
     {
-        $provider = $this->aiJobProposal->provider;
-        $apiKey = config("services.ai.{$provider}.key", 'unknown') ?? 'unknown';
+        $proposal = AiJobProposal::find($this->aiJobProposalId);
 
-        // Redis Keys (isolated per provider + key)
-        $rateLimitKey = "ai_rate:{$provider}:" . md5($apiKey);
-        $semaphoreKey = "ai_parallel:{$provider}";
-
-        // Config
-        $rateLimit = (int) config('services.ai.rate_limit', 5);              // e.g. 5 requests
-        $interval  = (int) config('services.ai.rate_limit_interval', 60);    // per 60 seconds
-        $maxParallel = (int) config('services.ai.max_parallel_requests', 3); // concurrent requests
-
-        // STEP 1: Acquire parallel slot
-        if (!$this->acquireSemaphore($semaphoreKey, $maxParallel)) {
-            $this->reQueueJob('parallel_limit_exceeded');
+        if (!$proposal || $proposal->status === AiProposalStatusEnum::COMPLETED->value) {
             return;
         }
 
-        try {
-            // STEP 2: Apply rate limiting
-            if (!$this->acquireRateLimit($rateLimitKey, $rateLimit, $interval)) {
-                $this->reQueueJob('rate_limit_exceeded');
-                return;
-            }
+        $provider = $proposal->provider;
+        $apiKey = config("services.ai.{$provider}.key", 'unknown') ?? 'unknown';
 
-            // STEP 3: Process job
-            $this->processProposal();
+        $rateLimitKey = "ai_rate:{$provider}:" . md5($apiKey);
+        $rateLimit = max(1, (int) config('services.ai.rate_limit', 5));
+        $interval = max(1, (int) config('services.ai.rate_limit_interval', 60));
 
-        } finally {
-            // STEP 4: Always release semaphore
-            $this->releaseSemaphore($semaphoreKey);
+        if (!$this->acquireRateLimit($rateLimitKey, $rateLimit, $interval)) {
+            $this->reQueueJob('rate_limit_exceeded');
+
+            return;
         }
+
+        $this->processProposal($proposal);
     }
 
-    /**
-     * Sliding window rate limiter using Redis ZSET
-     */
     protected function acquireRateLimit(string $key, int $limit, int $interval): bool
     {
-        $redis = Redis::connection();
-        $now = microtime(true);
+        $result = Redis::connection()->eval(
+            self::RATE_LIMIT_SCRIPT,
+            1,
+            $key,
+            (string) microtime(true),
+            (string) $interval,
+            (string) $limit,
+            (string) Str::uuid()
+        );
 
-        // Remove expired entries
-        $redis->zremrangebyscore($key, 0, $now - $interval);
-
-        // Count current requests
-        $count = $redis->zcard($key);
-
-        if ($count >= $limit) {
-            return false;
-        }
-
-        // Add current request
-        $redis->zadd($key, [$now => $now]);
-
-        // Ensure TTL
-        $redis->expire($key, $interval);
-
-        return true;
+        return (int) $result === 1;
     }
 
-    /**
-     * Acquire semaphore (limit concurrent requests)
-     */
-    protected function acquireSemaphore(string $key, int $max): bool
+    protected function processProposal(AiJobProposal $proposal): void
     {
-        $redis = Redis::connection();
+        $job = Job::find($proposal->job_id);
 
-        $current = $redis->incr($key);
+        if (!$job) {
+            $this->markFailed($proposal, 'Job not found.');
 
-        if ($current > $max) {
-            $redis->decr($key);
-            return false;
+            return;
         }
 
-        // Prevent deadlocks (worker crash safety)
-        $redis->expire($key, 60);
+        if (empty($proposal->prompt)) {
+            $proposal->forceFill([
+                'prompt' => $proposal->getPromptText(),
+                'instructions' => $proposal->getModelInstructions(),
+            ])->save();
+        }
 
-        return true;
-    }
-
-    /**
-     * Release semaphore safely
-     */
-    protected function releaseSemaphore(string $key): void
-    {
-        $redis = Redis::connection();
+        $proposal->forceFill([
+            'status' => AiProposalStatusEnum::GENERATING->value,
+            'attempts' => $proposal->attempts + 1,
+            'last_error' => null,
+        ])->save();
 
         try {
-            if ($redis->get($key) > 0) {
-                $redis->decr($key);
-            }
-        } catch (Exception $e) {
-            Log::warning('Semaphore release failed', [
-                'key' => $key,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Main AI processing logic
-     */
-    protected function processProposal(): void
-    {
-        try {
-            $job = Job::find($this->aiJobProposal->job_id);
-
-            if (!$job) {
-                throw new Exception("Job not found.");
-            }
-
             $agent = app(AiJobProposalAgent::class);
-            $agent->setConversationId($this->aiJobProposal->conversation_id);
-            $agent->setInstructions($this->aiJobProposal->instructions);
+            $agent->setConversationId($proposal->conversation_id);
+            $agent->setInstructions($proposal->instructions);
 
             $response = $agent->prompt(
-                prompt: $this->aiJobProposal->prompt,
-                provider: $this->aiJobProposal->provider,
-                model: $this->aiJobProposal->model
+                prompt: $proposal->prompt,
+                provider: $proposal->provider,
+                model: $proposal->model
             );
 
-            $this->aiJobProposal->update([
-                'proposal'     => (string) $response,
-                'status'       => 'completed',
+            $proposal->forceFill([
+                'proposal' => (string) $response,
+                'status' => AiProposalStatusEnum::COMPLETED->value,
                 'generated_at' => now(),
-            ]);
-
-        } catch (Exception $e) {
-            $this->aiJobProposal->update([
-                'status'   => 'failed',
+            ])->save();
+        } catch (Throwable $e) {
+            $proposal->forceFill([
+                'status' => AiProposalStatusEnum::FAILED->value,
+                'last_error' => mb_substr($e->getMessage(), 0, 1000),
                 'proposal' => 'Error generating proposal: ' . $e->getMessage(),
-            ]);
+            ])->save();
 
             throw $e;
         }
     }
 
     /**
-     * Re-dispatch job with exponential backoff for rate-limit reasons.
+     * Re-dispatch with exponential backoff for rate-limit reasons.
      */
-    protected function reQueueJob(string $reason = 'unknown', array $context = []): void
+    protected function reQueueJob(string $reason): void
     {
-        Log::info('GenerateAiJobProposal requeued', array_merge([
+        $proposal = AiJobProposal::find($this->aiJobProposalId);
+
+        if ($this->aiCurrentAttempt >= self::MAX_REQUEUES) {
+            $this->markFailed($proposal, $reason . ' (max attempts reached)');
+
+            Log::error('GenerateAiJobProposal exhausted its retry budget', [
+                'reason' => $reason,
+                'ai_job_proposal_id' => $this->aiJobProposalId,
+                'attempt' => $this->aiCurrentAttempt,
+            ]);
+
+            return;
+        }
+
+        $delay = $this->getBackoff();
+
+        Log::info('GenerateAiJobProposal requeued', [
             'reason' => $reason,
-            'provider' => $this->aiJobProposal->provider,
-            'ai_job_proposal_id' => $this->aiJobProposal->id,
+            'provider' => $proposal?->provider,
+            'ai_job_proposal_id' => $this->aiJobProposalId,
             'attempt' => $this->aiCurrentAttempt,
-        ], $context));
+            'delay' => $delay,
+        ]);
 
-        $delay = match ($reason) {
-            'rate_limit_exceeded' => $this->getRateLimitBackoff(),
-            default               => 10,
-        };
-
-        static::dispatch($this->aiJobProposal, $this->aiCurrentAttempt + 1)
+        static::dispatch($this->aiJobProposalId, $this->aiCurrentAttempt + 1)
+            ->onQueue('ai')
             ->delay(now()->addSeconds($delay));
 
         $this->delete();
@@ -212,8 +208,38 @@ class GenerateAiJobProposal implements ShouldQueue
     /**
      * Exponential backoff: 10 → 20 → 40 → 80 → 160 → 320 → 600 (cap)
      */
-    protected function getRateLimitBackoff(): int
+    protected function getBackoff(): int
     {
-        return min(10 * (2 ** ($this->aiCurrentAttempt - 1)), $this->maxBackoff);
+        return min(10 * (2 ** ($this->aiCurrentAttempt - 1)), self::MAX_BACKOFF);
+    }
+
+    protected function markFailed(?AiJobProposal $proposal, string $reason): void
+    {
+        if (!$proposal) {
+            return;
+        }
+
+        $proposal->forceFill([
+            'status' => AiProposalStatusEnum::FAILED->value,
+            'last_error' => mb_substr($reason, 0, 1000),
+        ])->save();
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        $proposal = AiJobProposal::find($this->aiJobProposalId);
+
+        if ($proposal) {
+            $proposal->forceFill([
+                'status' => AiProposalStatusEnum::FAILED->value,
+                'last_error' => mb_substr($exception->getMessage(), 0, 1000),
+            ])->save();
+        }
+
+        Log::error('GenerateAiJobProposal failed', [
+            'ai_job_proposal_id' => $this->aiJobProposalId,
+            'attempt' => $this->aiCurrentAttempt,
+            'error' => $exception->getMessage(),
+        ]);
     }
 }

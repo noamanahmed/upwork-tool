@@ -11,7 +11,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Cache;
 
 class JobSearchResource extends Resource
 {
@@ -206,8 +205,7 @@ class JobSearchResource extends Resource
                     ->modalDescription('This will immediately dispatch a background queue job to search Upwork for matching jobs, bypassing scheduler restrictions.')
                     ->modalSubmitActionLabel('Dispatch Search Now')
                     ->action(function (JobSearch $record) {
-                        Cache::forget('job_service_dispatch_job_' . $record->id);
-                        \App\Jobs\JobSearch::dispatch($record);
+                        \App\Jobs\JobSearch::dispatch($record->id)->onQueue('scraping');
 
                         Notification::make()
                             ->title('Job Search Dispatched')
@@ -231,8 +229,7 @@ class JobSearchResource extends Resource
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $count = 0;
                             foreach ($records as $record) {
-                                Cache::forget('job_service_dispatch_job_' . $record->id);
-                                \App\Jobs\JobSearch::dispatch($record);
+                                \App\Jobs\JobSearch::dispatch($record->id)->onQueue('scraping');
                                 $count++;
                             }
 

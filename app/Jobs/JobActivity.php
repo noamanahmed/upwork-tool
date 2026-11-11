@@ -22,6 +22,14 @@ class JobActivity implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $queue = 'default';
+
+    public $tries = 3;
+
+    public $backoff = [30, 120];
+
+    public $timeout = 30;
+
     /**
      * Create a new job instance.
      */
@@ -37,12 +45,18 @@ class JobActivity implements ShouldQueue
     {
         $upworkJob = $this->upworkJob;
         $lock = Cache::lock('job_activity_service_update_job_activity_' . $upworkJob->id. '_schedule_' . $this->delayInSeconds, 60);
+
         if(!$lock->get()) return;
-        $activtyAlreadyExists = ModelsJobActivity::where('job_id',$upworkJob->id)->where('schedule',$this->delayInSeconds)->count();
-        if($activtyAlreadyExists > 0) return;
-        $activities = app(UpWorkService::class)->jobActivity($this->upworkJob->toArray());
-        app(JobActivityService::class)->updatejobActivities($this->upworkJob,$activities,$this->delayInSeconds);
-        $lock->release();
+
+        try {
+            $activityAlreadyExists = ModelsJobActivity::where('job_id',$upworkJob->id)->where('schedule',$this->delayInSeconds)->count();
+            if($activityAlreadyExists > 0) return;
+
+            $activities = app(UpWorkService::class)->jobActivity($upworkJob->toArray());
+            app(JobActivityService::class)->updatejobActivities($upworkJob,$activities,$this->delayInSeconds);
+        } finally {
+            $lock->release();
+        }
     }
     /**
      * Get the tags that should be assigned to the job.

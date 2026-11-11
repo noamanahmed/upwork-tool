@@ -34,10 +34,13 @@ class JobResource extends Resource
                 TextColumn::make('posted_at')
                     ->label('Posted')
                     ->sortable(query: function (Builder $query, string $direction) {
+                        if ($direction === 'desc') {
+                            return $query->orderBy('posted_at', 'desc');
+                        }
+
                         return $query
                             ->orderByRaw("CASE WHEN posted_at IS NOT NULL AND posted_at > '1970-01-01 00:00:01' THEN 0 ELSE 1 END")
-                            ->orderBy('posted_at', $direction)
-                            ->orderBy('created_at', 'desc');
+                            ->orderBy('posted_at', 'asc');
                     })
                     ->formatStateUsing(function ($state, Job $record) {
                         if (!$record->posted_at || $record->posted_at->year <= 2000) {
@@ -317,7 +320,7 @@ class JobResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['searches', 'skills', 'aiProposals']);
+            ->with(['searches', 'skills']);
     }
 
     public static function infolist(Infolist $infolist): Infolist

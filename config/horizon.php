@@ -70,7 +70,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', 'auth'],
 
     /*
     |--------------------------------------------------------------------------
@@ -84,6 +84,9 @@ return [
     */
 
     'waits' => [
+        'redis:scraping' => 120,
+        'redis:ai' => 300,
+        'redis:notifications' => 60,
         'redis:default' => 60,
     ],
 
@@ -180,34 +183,106 @@ return [
     */
 
     'defaults' => [
-        'supervisor-1' => [
+
+        // Upwork scraping / discovery. Must never be starved by AI work.
+        'supervisor-scraping' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            'queue' => ['scraping'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses' => 1,
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 1,
+            'timeout' => 120,
+            'nice' => 0,
+        ],
+
+        // AI proposal generation. maxProcesses is the real concurrency cap for
+        // provider API calls, so it is configurable per environment.
+        'supervisor-ai' => [
+            'connection' => 'redis',
+            'queue' => ['ai'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'size',
+            'maxProcesses' => (int) env('HORIZON_AI_MAX_PROCESSES', 3),
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 512,
+            'tries' => 1,
+            'timeout' => 150,
+            'nice' => 0,
+        ],
+
+        // Slack webhook delivery. Cheap and frequent, kept fully separate.
+        'supervisor-notifications' => [
+            'connection' => 'redis',
+            'queue' => ['notifications'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 5,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
             'tries' => 1,
-            'timeout' => 60,
+            'timeout' => 30,
+            'nice' => 0,
+        ],
+
+        // Delayed job-activity polling and queued mail notifications.
+        'supervisor-default' => [
+            'connection' => 'redis',
+            'queue' => ['default'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 1,
+            'timeout' => 90,
             'nice' => 0,
         ],
     ],
 
     'environments' => [
+
         'production' => [
-            'supervisor-1' => [
+            'supervisor-scraping' => [
+                'maxProcesses' => 3,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-ai' => [
+                'maxProcesses' => (int) env('HORIZON_AI_MAX_PROCESSES', 3),
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-notifications' => [
+                'maxProcesses' => 5,
+                'balanceMaxShift' => 2,
+                'balanceCooldown' => 1,
+            ],
+            'supervisor-default' => [
                 'maxProcesses' => 2,
                 'balanceMaxShift' => 1,
-                'balanceCooldown' => 2,
+                'balanceCooldown' => 3,
             ],
         ],
 
         'local' => [
-            'supervisor-1' => [
-                'maxProcesses' => 2,
-            ],
+            'supervisor-scraping' => ['maxProcesses' => 1],
+            'supervisor-ai' => ['maxProcesses' => 2],
+            'supervisor-notifications' => ['maxProcesses' => 2],
+            'supervisor-default' => ['maxProcesses' => 1],
+        ],
+
+        'testing' => [
+            'supervisor-scraping' => ['maxProcesses' => 1],
+            'supervisor-ai' => ['maxProcesses' => 1],
+            'supervisor-notifications' => ['maxProcesses' => 1],
+            'supervisor-default' => ['maxProcesses' => 1],
         ],
     ],
 ];

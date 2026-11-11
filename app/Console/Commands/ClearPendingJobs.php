@@ -12,14 +12,14 @@ class ClearPendingJobs extends Command
      *
      * @var string
      */
-    protected $signature = 'queue:clear-pending {connection=redis} {queue=default}';
+    protected $signature = 'queue:clear-pending {connection=redis} {queue=default : One of: scraping, ai, notifications, default}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Clear pending, reserved, and ready jobs from a specified Redis queue';
+    protected $description = 'Clear pending, reserved, and ready jobs from a specified Redis queue (scraping, ai, notifications, default)';
 
     /**
      * Execute the console command.

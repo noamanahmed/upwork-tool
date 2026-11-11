@@ -66,9 +66,11 @@ return [
             'driver' => 'redis',
             'connection' => 'default',
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => 90,
+            // Must stay above the longest Horizon supervisor timeout (150s for the ai queue).
+            'retry_after' => 190,
             'block_for' => null,
-            'after_commit' => false,
+            // Workers must never see rows from a transaction that has not committed yet.
+            'after_commit' => true,
         ],
 
     ],

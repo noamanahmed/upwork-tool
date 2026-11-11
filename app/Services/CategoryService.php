@@ -84,7 +84,7 @@ class CategoryService extends BaseService{
     {
         if(empty($data)) return;
         $locks = [];
-        $categories = [];
+        $jobIds = [];
         $pivotSkills = [];
         $pivotCategories = [];
         foreach ($data as $jobData) {

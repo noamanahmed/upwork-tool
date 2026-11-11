@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\AiProposalStatusEnum;
 use App\Http\Requests\StoreUpWorkRequest;
 use App\Http\Requests\UpdateUpWorkRequest;
 use App\Models\AiJobProposal;
@@ -9,6 +10,7 @@ use App\Models\Job;
 use App\Models\JobSearch;
 use App\Models\RssJobSearches;
 use App\Models\UpWork;
+use App\Services\AiProposalService;
 use App\Services\JobService;
 use App\Services\UpWorkService;
 use Illuminate\Http\Request;
@@ -89,37 +91,25 @@ class UpWorkController extends BaseController
         $enabledProviders = config('services.ai.enabled_providers', []);
         $provider = $request->get('provider', $enabledProviders[0] ?? null);
 
-        if (!$provider || !in_array($provider, $enabledProviders)) {
+        if (!$provider || !in_array($provider, $enabledProviders, true)) {
             return $this->upworkService->apiResponseWithAuthorizationFailedError([
                 'message' => "Provider [{$provider}] is not enabled. Enabled: " . implode(', ', $enabledProviders),
             ]);
         }
 
-        $modelName = config("services.ai.{$provider}.model");
-        $conversationId = config("services.ai.{$provider}.conversation_id");
-
-        if (empty($modelName) || empty($conversationId)) {
-            return $this->upworkService->errorfullApiResponse([
-                'message' => "Missing model or conversation_id config for provider [{$provider}].",
-            ]);
-        }
-
-        // Check if an AI proposal already exists for this job + provider
         $existingProposal = AiJobProposal::where('job_id', $jobId)
             ->where('provider', $provider)
             ->first();
 
         if ($existingProposal) {
-            if ($existingProposal->status === 'completed') {
+            if ($existingProposal->status === AiProposalStatusEnum::COMPLETED->value) {
                 return $this->upworkService->successfullApiResponse([
                     'message' => 'The AI proposal is already generated.',
                     'proposal' => $existingProposal,
                 ]);
             }
 
-            if ($existingProposal->status === 'failed') {
-                $existingProposal->delete();
-            } else {
+            if (in_array($existingProposal->status, AiProposalStatusEnum::inFlight(), true)) {
                 return $this->upworkService->successfullApiResponse([
                     'message' => 'The AI proposal is currently being generated.',
                     'proposal' => $existingProposal,
@@ -127,24 +117,17 @@ class UpWorkController extends BaseController
             }
         }
 
-        $aiJobProposal = (new AiJobProposal())->fill([
-            'job_id' => $jobId,
-            'status' => 'generating',
-            'provider' => $provider,
-            'model' => $modelName,
-            'conversation_id' => $conversationId,
-            'proposal' => 'N/A',
-        ]);
+        $dispatched = app(AiProposalService::class)->dispatchForJob($job, $provider);
 
-        $aiJobProposal->prompt = $aiJobProposal->getPromptText();
-        $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
-        $aiJobProposal->save();
-
-        dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
+        if ($dispatched === 0) {
+            return $this->upworkService->errorfullApiResponse([
+                'message' => "Missing model or conversation_id config for provider [{$provider}].",
+            ]);
+        }
 
         return $this->upworkService->successfullApiResponse([
             'message' => 'The AI proposal is currently being generated.',
-            'proposal' => $aiJobProposal,
+            'proposal' => AiJobProposal::where('job_id', $jobId)->where('provider', $provider)->first(),
         ]);
     }
 
@@ -165,45 +148,27 @@ class UpWorkController extends BaseController
         $enabledProviders = config('services.ai.enabled_providers', []);
         $provider = $request->get('provider', $enabledProviders[0] ?? null);
 
-        if (!$provider || !in_array($provider, $enabledProviders)) {
+        if (!$provider || !in_array($provider, $enabledProviders, true)) {
             return $this->upworkService->apiResponseWithAuthorizationFailedError([
                 'message' => "Provider [{$provider}] is not enabled. Enabled: " . implode(', ', $enabledProviders),
             ]);
         }
 
-        $modelName = config("services.ai.{$provider}.model");
-        $conversationId = config("services.ai.{$provider}.conversation_id");
+        AiJobProposal::where('job_id', $jobId)
+            ->where('provider', $provider)
+            ->delete();
 
-        if (empty($modelName) || empty($conversationId)) {
+        $dispatched = app(AiProposalService::class)->dispatchForJob($job, $provider);
+
+        if ($dispatched === 0) {
             return $this->upworkService->errorfullApiResponse([
                 'message' => "Missing model or conversation_id config for provider [{$provider}].",
             ]);
         }
 
-        // Delete existing proposal for this job + provider only
-        AiJobProposal::where('job_id', $jobId)
-            ->where('provider', $provider)
-            ->delete();
-
-        // Create fresh proposal record
-        $aiJobProposal = (new AiJobProposal())->fill([
-            'job_id' => $jobId,
-            'status' => 'generating',
-            'provider' => $provider,
-            'model' => $modelName,
-            'conversation_id' => $conversationId,
-            'proposal' => 'N/A',
-        ]);
-
-        $aiJobProposal->prompt = $aiJobProposal->getPromptText();
-        $aiJobProposal->instructions = $aiJobProposal->getModelInstructions();
-        $aiJobProposal->save();
-
-        dispatch(new \App\Jobs\GenerateAiJobProposal($aiJobProposal));
-
         return $this->upworkService->successfullApiResponse([
             'message' => 'Proposal regeneration initiated.',
-            'proposal' => $aiJobProposal->fresh(),
+            'proposal' => AiJobProposal::where('job_id', $jobId)->where('provider', $provider)->first(),
         ]);
     }
 }

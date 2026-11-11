@@ -33,7 +33,7 @@ class GetProposalJobs extends Command
      */
     public function handle()
     {
-        $proposals = Cache::remember('job_searches', 15 * 60, function () {
+        $proposals = Cache::remember('proposals_without_jobs', 15 * 60, function () {
             return Proposal::query()->get();
         });
         $upworkJobIds = [];
