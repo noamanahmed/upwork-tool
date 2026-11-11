@@ -98,9 +98,7 @@ class Job extends BaseModel
 
     function getAdditonalData()
     {
-        if (empty($this->json))
-            return;
-        return Arr::dot(json_decode($this->json, true));
+        return $this->json ? Arr::dot($this->json) : [];
     }
 
     function getCurrencySymbol()
