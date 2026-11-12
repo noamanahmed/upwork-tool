@@ -20,8 +20,6 @@ class GenerateAiJobProposal implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $queue = 'ai';
-
     /**
      * Framework retries for real API exceptions.
      */
@@ -77,6 +75,7 @@ LUA;
         public int $aiJobProposalId,
         int $aiCurrentAttempt = 1,
     ) {
+        $this->onQueue('ai');
         $this->aiCurrentAttempt = $aiCurrentAttempt;
     }
 
@@ -199,7 +198,6 @@ LUA;
         ]);
 
         static::dispatch($this->aiJobProposalId, $this->aiCurrentAttempt + 1)
-            ->onQueue('ai')
             ->delay(now()->addSeconds($delay));
 
         $this->delete();

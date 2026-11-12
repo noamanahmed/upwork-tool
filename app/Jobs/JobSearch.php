@@ -22,8 +22,6 @@ class JobSearch implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $queue = 'scraping';
-
     public $tries = 3;
 
     public $backoff = [10, 30, 60];
@@ -37,6 +35,7 @@ class JobSearch implements ShouldQueue, ShouldBeUnique
 
     public function __construct(public int $jobSearchId)
     {
+        $this->onQueue('scraping');
     }
 
     public function uniqueId(): string
@@ -84,8 +83,7 @@ class JobSearch implements ShouldQueue, ShouldBeUnique
         }
 
         foreach ($newPivots as $pivot) {
-            SendJobSlackNotification::dispatch($pivot['job_id'], $pivot['job_search_id'])
-                ->onQueue('notifications');
+            SendJobSlackNotification::dispatch($pivot['job_id'], $pivot['job_search_id']);
         }
     }
 

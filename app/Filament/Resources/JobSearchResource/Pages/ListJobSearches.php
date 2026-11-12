@@ -45,7 +45,7 @@ class ListJobSearches extends ListRecords
 
                     $count = 0;
                     foreach ($searches as $search) {
-                        \App\Jobs\JobSearch::dispatch($search->id)->onQueue('scraping');
+                        \App\Jobs\JobSearch::dispatch($search->id);
                         $count++;
                     }
 

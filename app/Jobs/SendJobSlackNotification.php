@@ -19,8 +19,6 @@ class SendJobSlackNotification implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $queue = 'notifications';
-
     public $tries = 5;
 
     public $backoff = [5, 15, 60, 120, 300];
@@ -33,6 +31,7 @@ class SendJobSlackNotification implements ShouldQueue, ShouldBeUnique
         public int $jobId,
         public int $jobSearchId,
     ) {
+        $this->onQueue('notifications');
     }
 
     public function uniqueId(): string

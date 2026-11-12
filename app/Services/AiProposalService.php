@@ -93,7 +93,7 @@ class AiProposalService
                 $proposal->save();
             }
 
-            GenerateAiJobProposal::dispatch($proposal->id)->onQueue('ai');
+            GenerateAiJobProposal::dispatch($proposal->id);
             $dispatched++;
         }
 

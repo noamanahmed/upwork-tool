@@ -22,8 +22,6 @@ class JobActivity implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $queue = 'default';
-
     public $tries = 3;
 
     public $backoff = [30, 120];
@@ -35,7 +33,7 @@ class JobActivity implements ShouldQueue
      */
     public function __construct(public Job $upworkJob,public int $delayInSeconds)
     {
-        //
+        $this->onQueue('default');
     }
 
     /**

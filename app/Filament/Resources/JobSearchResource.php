@@ -229,7 +229,7 @@ class JobSearchResource extends Resource
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $count = 0;
                             foreach ($records as $record) {
-                                \App\Jobs\JobSearch::dispatch($record->id)->onQueue('scraping');
+                                \App\Jobs\JobSearch::dispatch($record->id);
                                 $count++;
                             }
 

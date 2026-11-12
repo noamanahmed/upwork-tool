@@ -42,8 +42,7 @@ class SendJobSlackNotifications extends Command
             ->get(['job_id', 'job_search_id']);
 
         foreach ($pending as $pivot) {
-            SendJobSlackNotification::dispatch($pivot->job_id, $pivot->job_search_id)
-                ->onQueue('notifications');
+            SendJobSlackNotification::dispatch($pivot->job_id, $pivot->job_search_id);
         }
 
         $this->info("Dispatched {$pending->count()} pending Slack notification job(s).");

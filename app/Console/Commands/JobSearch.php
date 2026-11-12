@@ -36,7 +36,7 @@ class JobSearch extends Command
         });
 
         foreach ($jobSearches as $search) {
-            JobsJobSearch::dispatch($search->id)->onQueue('scraping');
+            JobsJobSearch::dispatch($search->id);
             $this->line('Dispatched search ID: ' . $search->id);
         }
     }

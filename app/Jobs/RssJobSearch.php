@@ -17,8 +17,6 @@ class RssJobSearch implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $queue = 'scraping';
-
     public $tries = 3;
 
     public $backoff = [10, 30, 60];
@@ -30,7 +28,7 @@ class RssJobSearch implements ShouldQueue
      */
     public function __construct(public RssJobSearches $rssJobSearch)
     {
-        //
+        $this->onQueue('scraping');
     }
 
     /**

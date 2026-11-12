@@ -90,7 +90,7 @@ class GenerateAiProposals extends Command
             ->pluck('id');
 
         foreach ($stuck as $proposalId) {
-            GenerateAiJobProposal::dispatch($proposalId)->onQueue('ai');
+            GenerateAiJobProposal::dispatch($proposalId);
         }
 
         $this->info("Re-dispatched {$stuck->count()} stuck proposal(s).");
