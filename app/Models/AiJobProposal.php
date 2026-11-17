@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Template\MustacheEngine;
 use Illuminate\Support\Str;
 
 class AiJobProposal extends BaseModel
@@ -43,13 +44,56 @@ class AiJobProposal extends BaseModel
     | Public API
     |--------------------------------------------------------------------------
     */
-    public function getPromptText(): string
+    public function getPromptText(?string $provider = null): string
     {
-        $job = $this->getJobDetails();
-        $context = $this->buildContext();
-        $insights = $this->extractJobInsights();
+        $provider = $provider ?? $this->provider;
+        $template = null;
 
-        return <<<EOT
+        if ($provider) {
+            $template = Setting::get('AI_PROMPT_TEMPLATE_' . strtoupper($provider));
+        }
+
+        if (empty($template)) {
+            $template = Setting::get('AI_PROMPT_TEMPLATE');
+        }
+
+        if (empty($template)) {
+            $template = static::defaultPromptTemplate();
+        }
+
+        $context = $this->buildTemplateContext($provider);
+
+        return MustacheEngine::render($template, $context);
+    }
+
+    public function getModelInstructions(?string $provider = null): string
+    {
+        $provider = $provider ?? $this->provider;
+        $template = null;
+
+        if ($provider) {
+            $template = Setting::get('AI_SYSTEM_PROMPT_' . strtoupper($provider));
+        }
+
+        if (empty($template)) {
+            $template = Setting::get('AI_SYSTEM_PROMPT');
+        }
+
+        if (empty($template)) {
+            $template = static::defaultSystemPrompt();
+        }
+
+        $context = $this->buildTemplateContext($provider);
+
+        return MustacheEngine::render($template, $context);
+    }
+
+    /**
+     * Default proposal prompt template using Mustache syntax tags.
+     */
+    public static function defaultPromptTemplate(): string
+    {
+        return <<<'EOT'
 Write a highly tailored Upwork proposal for the following job.
 
 The proposal must feel:
@@ -69,16 +113,21 @@ JOB DETAILS
 =====================
 
 Title:
-{$job['title']}
+{{ job.title }}
 
 Description:
-{$job['description']}
+{{ job.description }}
+
+{{#job.budget}}
+Budget:
+{{ job.budget }}
+{{/job.budget}}
 
 =====================
 JOB INSIGHTS
 =====================
 
-{$insights}
+{{ insights }}
 
 
 =====================
@@ -86,21 +135,21 @@ FREELANCER CONTEXT
 =====================
 
 Name:
-{$context['name']}
+{{ freelancer.name }}
 
 Relevant Skills:
-{$context['skills']}
+{{ freelancer.skills }}
 
 Key Achievement:
-{$context['achievements']}
+{{ freelancer.achievements }}
 
 Relevant Experience:
-{$context['experience']}
+{{ freelancer.experience }}
 
 Relevant Certification:
-{$context['certifications']}
+{{ freelancer.certifications }}
 
-{$context['case_study']}
+{{ freelancer.case_study }}
 
 =====================
 CONTEXT PRIORITY RULES
@@ -237,9 +286,12 @@ OUTPUT REQUIREMENTS
 EOT;
     }
 
-    public function getModelInstructions(): string
+    /**
+     * Default system instructions template using Mustache syntax tags.
+     */
+    public static function defaultSystemPrompt(): string
     {
-        return <<<EOT
+        return <<<'EOT'
 You are a senior developer writing HIGH-CONVERSION Upwork proposals.
 
 Your goal is NOT to sound impressive.
@@ -434,8 +486,106 @@ OUTPUT FORMAT
 ------------------
 ------------------
 
-
 EOT;
+    }
+
+    /**
+     * Build rich template context dictionary for Mustache rendering.
+     */
+    public function buildTemplateContext(?string $provider = null): array
+    {
+        $job = $this->job ?? ($this->job_id ? Job::find($this->job_id) : null);
+        $jobDetails = $this->getJobDetails();
+        $freelancerContext = $this->buildContext();
+        $insightsText = $this->extractJobInsights();
+        $insightsData = $this->extractJobInsightsData();
+
+        $additionalData = $job ? $job->getAdditonalData() : [];
+
+        $budgetStr = 'N/A';
+        if ($job) {
+            if ($job->budget_minimum && $job->budget_maximum) {
+                $budgetStr = ($job->budget_minimum === $job->budget_maximum)
+                    ? '$' . number_format($job->budget_minimum)
+                    : '$' . number_format($job->budget_minimum) . ' - $' . number_format($job->budget_maximum);
+            } elseif ($job->budget_minimum) {
+                $budgetStr = '$' . number_format($job->budget_minimum);
+            }
+        }
+
+        $clientName = $additionalData['node.job.ownership.team.name'] ?? 'N/A';
+        $clientTotalSpend = isset($additionalData['node.client.totalSpent.rawValue'])
+            ? '$' . number_format((float) $additionalData['node.client.totalSpent.rawValue'])
+            : ($job && $job->client_total_spent ? '$' . number_format((float) $job->client_total_spent) : 'N/A');
+
+        $config = config('admin', []);
+        $skillsList = $this->getRawMatchedSkills();
+        $achievementsList = $this->getRawMatchedAchievements();
+        $caseStudiesList = $this->getRawMatchedCaseStudies();
+
+        $resolvedProvider = $provider ?? $this->provider ?? 'default';
+
+        return [
+            'job' => [
+                'id' => $job?->id,
+                'title' => $jobDetails['title'],
+                'description' => $jobDetails['description'],
+                'budget' => $budgetStr !== 'N/A' ? $budgetStr : '',
+                'budget_display' => $budgetStr,
+                'budget_min' => $job?->budget_minimum,
+                'budget_max' => $job?->budget_maximum,
+                'type' => $job?->is_hourly ? 'HOURLY' : 'FIXED RATE',
+                'is_hourly' => (bool) $job?->is_hourly,
+                'hourly' => (bool) $job?->is_hourly,
+                'location' => $job?->location ?? 'N/A',
+                'total_applicants' => $additionalData['node.totalApplicants'] ?? 'N/A',
+                'upwork_url' => $job ? $job->getUpworkUrl() : '',
+                'posted_at' => $job?->posted_at?->diffForHumans() ?? 'N/A',
+                'skills' => ($job && $job->relationLoaded('skills')) ? $job->skills->pluck('name')->implode(', ') : '',
+            ],
+            'client' => [
+                'name' => $clientName,
+                'location' => $job?->location ?? 'N/A',
+                'country' => $additionalData['node.client.location.country'] ?? 'N/A',
+                'city' => $additionalData['node.client.location.city'] ?? 'N/A',
+                'total_spent' => $clientTotalSpend,
+                'total_hires' => $job?->client_total_hires ?? ($additionalData['node.client.totalHires'] ?? 'N/A'),
+                'total_reviews' => $job?->client_total_reviews ?? ($additionalData['node.client.totalReviews'] ?? 'N/A'),
+                'feedback' => $job?->client_total_feedback ? number_format($job->client_total_feedback, 1) : ($additionalData['node.client.totalFeedback'] ?? 'N/A'),
+                'total_posted_jobs' => $job?->client_total_posted_jobs ?? ($additionalData['node.client.totalPostedJobs'] ?? 'N/A'),
+                'payment_verified' => $job?->is_payment_verified ? 'Yes' : 'No',
+                'is_payment_verified' => (bool) $job?->is_payment_verified,
+            ],
+            'freelancer' => [
+                'name' => $freelancerContext['name'],
+                'first_name' => $config['personal']['first_name'] ?? '',
+                'last_name' => $config['personal']['last_name'] ?? '',
+                'skills' => $freelancerContext['skills'],
+                'skills_list' => $skillsList,
+                'achievements' => $freelancerContext['achievements'],
+                'achievements_list' => $achievementsList,
+                'experience' => $freelancerContext['experience'],
+                'certifications' => $freelancerContext['certifications'],
+                'case_study' => $freelancerContext['case_study'],
+                'case_studies' => $caseStudiesList,
+            ],
+            'insights' => $insightsText,
+            'insights_data' => $insightsData,
+            'provider' => [
+                'name' => $resolvedProvider,
+                'model' => $this->model ?? config("services.ai.{$resolvedProvider}.model", ''),
+            ],
+
+            // Direct convenience aliases
+            'job_title' => $jobDetails['title'],
+            'job_description' => $jobDetails['description'],
+            'job_budget' => $budgetStr !== 'N/A' ? $budgetStr : '',
+            'client_name' => $clientName,
+            'freelancer_name' => $freelancerContext['name'],
+            'freelancer_skills' => $freelancerContext['skills'],
+            'freelancer_achievements' => $freelancerContext['achievements'],
+            'freelancer_case_study' => $freelancerContext['case_study'],
+        ];
     }
 
     /*
@@ -445,17 +595,20 @@ EOT;
     */
     protected function buildContext(): array
     {
-        $config = config('admin');
+        $config = config('admin', []);
         $jobText = $this->normalizeKeywords(
-            strtolower($this->job->title . ' ' . $this->job->description)
+            strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
         );
 
-        $skills = $this->selectRelevantSkills($config['skills'], $jobText);
+        $skills = $this->selectRelevantSkills($config['skills'] ?? [], $jobText);
         $caseStudies = $this->selectCaseStudies($config, $jobText);
         $achievements = $this->selectAchievements($config, $jobText);
 
+        $firstName = $config['personal']['first_name'] ?? '';
+        $lastName = $config['personal']['last_name'] ?? '';
+
         return [
-            'name' => $config['personal']['first_name'] . ' ' . $config['personal']['last_name'],
+            'name' => trim($firstName . ' ' . $lastName),
             'skills' => $this->formatSkills($skills),
             'achievements' => $this->formatAchievements($achievements),
             'experience' => '',
@@ -512,15 +665,48 @@ EOT;
         return $matched;
     }
 
+    public function getRawMatchedSkills(): array
+    {
+        $config = config('admin', []);
+        $skills = $config['skills'] ?? [];
+        $jobText = $this->normalizeKeywords(
+            strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
+        );
+        $matched = $this->selectRelevantSkills($skills, $jobText);
+        $flat = [];
+        foreach ($matched as $items) {
+            $flat = array_merge($flat, $items);
+        }
+        return array_values(array_unique($flat));
+    }
+
+    public function getRawMatchedAchievements(): array
+    {
+        $config = config('admin', []);
+        $jobText = $this->normalizeKeywords(
+            strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
+        );
+        return array_values($this->selectAchievements($config, $jobText));
+    }
+
+    public function getRawMatchedCaseStudies(): array
+    {
+        $config = config('admin', []);
+        $jobText = $this->normalizeKeywords(
+            strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
+        );
+        return array_values($this->selectCaseStudies($config, $jobText));
+    }
+
     protected function selectCaseStudies(array $config, string $jobText): array
     {
-        $caseStudies = $config['case_studies'];
+        $caseStudies = $config['case_studies'] ?? [];
         $limit = $config['ai_rules']['max_case_studies'] ?? 1;
 
         $matched = [];
 
         foreach ($caseStudies as $caseStudy) {
-            foreach ($caseStudy['tags'] as $tag) {
+            foreach ($caseStudy['tags'] ?? [] as $tag) {
                 if (Str::contains($jobText, Str::lower($tag))) {
                     $matched[] = $caseStudy;
                     break;
@@ -536,7 +722,7 @@ EOT;
         $limit = $config['ai_rules']['max_achievements'] ?? 1;
         $matched = [];
 
-        foreach ($config['achievements'] as $group => $items) {
+        foreach ($config['achievements'] ?? [] as $group => $items) {
             if (Str::contains($jobText, strtolower($group))) {
                 $matched = array_merge($matched, $items);
             }
@@ -552,12 +738,12 @@ EOT;
 
     /*
     |--------------------------------------------------------------------------
-    | Job Insights (NEW)
+    | Job Insights
     |--------------------------------------------------------------------------
     */
-    protected function extractJobInsights(): string
+    public function extractJobInsightsData(): array
     {
-        $text = strtolower($this->job->title . ' ' . $this->job->description);
+        $text = strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''));
 
         $urgency = Str::contains($text, ['urgent', 'asap', 'immediately'])
             ? 'High'
@@ -571,7 +757,17 @@ EOT;
             ? 'Build working solution quickly'
             : 'Improve or fix existing system';
 
-        return "- Urgency: {$urgency}\n- Risk: {$risk}\n- Goal: {$goal}";
+        return [
+            'urgency' => $urgency,
+            'risk' => $risk,
+            'goal' => $goal,
+        ];
+    }
+
+    protected function extractJobInsights(): string
+    {
+        $data = $this->extractJobInsightsData();
+        return "- Urgency: {$data['urgency']}\n- Risk: {$data['risk']}\n- Goal: {$data['goal']}";
     }
 
     /*
@@ -618,8 +814,8 @@ EOT;
     protected function getJobDetails(): array
     {
         return [
-            'title' => $this->job->title ?? 'N/A',
-            'description' => $this->job->description ?? 'N/A',
+            'title' => $this->job?->title ?? 'N/A',
+            'description' => $this->job?->description ?? 'N/A',
         ];
     }
 }

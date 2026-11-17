@@ -113,7 +113,12 @@ Uses `laravel/ai` package with `AiJobProposalAgent`. Each enabled provider gener
 
 Statuses (`App\Enums\AiProposalStatusEnum`, stored as strings): `pending` → `queued` → `generating` → `completed` / `failed`. `AiJobProposal` has a unique `(job_id, provider)` index, so retries are idempotent. Provider rate limiting is a Redis ZSET sliding window; concurrency is capped by Horizon's `ai` supervisor processes.
 
-Configuration in `config/services.php` → `services.ai` and `config/admin.php` for freelancer context (skills, achievements, case studies).
+Prompts and system instructions are fully customizable in System Settings under the **AI & Gemini** tab:
+- **Mustache Templating Engine (`App\Services\Template\MustacheEngine`)**: Powers dynamic tags (e.g. `{{ job.title }}`, `{{ job.description }}`, `{{ job.budget }}`, `{{ client.name }}`, `{{ freelancer.skills }}`, `{{ insights }}`). Supports standard tags, raw tags, conditional sections `{{#tag}}...{{/tag}}`, inverted sections `{{^tag}}...{{/tag}}`, loops, and dot notation without HTML entity escaping.
+- **Global & Per-Provider Prompts**: Configure default System Prompts and Proposal Prompt templates globally, or override either prompt specifically per provider (e.g., custom prompts for Gemini, OpenAI, Claude, Groq, etc.).
+- **Provider Management**: Enable or disable any AI provider on the fly via UI toggles; configure API keys (encrypted with AES-256 in DB), models, conversation IDs, and cloud endpoints (Azure, Bedrock, Ollama) directly from System Settings.
+
+Configuration in `config/services.php` → `services.ai`, `app/Models/Setting.php`, and `config/admin.php` for freelancer context (skills, achievements, case studies).
 
 ### Environment Variables
 

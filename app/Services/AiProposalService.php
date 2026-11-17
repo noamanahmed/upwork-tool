@@ -88,8 +88,8 @@ class AiProposalService
             }
 
             if (empty($proposal->prompt)) {
-                $proposal->prompt = $proposal->getPromptText();
-                $proposal->instructions = $proposal->getModelInstructions();
+                $proposal->prompt = $proposal->getPromptText($config['provider']);
+                $proposal->instructions = $proposal->getModelInstructions($config['provider']);
                 $proposal->save();
             }
 

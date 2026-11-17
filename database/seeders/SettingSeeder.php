@@ -93,17 +93,82 @@ class SettingSeeder extends Seeder
                 'description' => 'AI parallel request timeout in seconds',
             ],
 
-            // Gemini
-            'GEMINI_API_KEY' => [
-                'default_value' => '',
-                'is_encrypted' => true,
-                'description' => 'Google Gemini API key',
-            ],
-            'GEMINI_MODEL' => [
-                'default_value' => 'gemini-flash-latest',
+            // Global Proposal Prompts (Mustache)
+            'AI_SYSTEM_PROMPT' => [
+                'default_value' => \App\Models\AiJobProposal::defaultSystemPrompt(),
                 'is_encrypted' => false,
-                'description' => 'Gemini model name',
+                'description' => 'Default system prompt instructions for AI job proposals (Mustache tags supported)',
             ],
+            'AI_PROMPT_TEMPLATE' => [
+                'default_value' => \App\Models\AiJobProposal::defaultPromptTemplate(),
+                'is_encrypted' => false,
+                'description' => 'Default user prompt template for AI job proposals (Mustache tags supported)',
+            ],
+
+
+            // AI Providers (Credentials, Models, Enable/Disable, and Per-Provider Prompts)
+            ...static::providerDefaults(),
+        ];
+    }
+
+    /**
+     * Generate default settings for all AI providers.
+     */
+    protected static function providerDefaults(): array
+    {
+        $defaults = [];
+
+        foreach (Setting::AI_PROVIDERS as $provider => $meta) {
+            $u = strtoupper($provider);
+
+            $defaults["AI_{$u}_ENABLED"] = [
+                'default_value' => $meta['default_enabled'] ? '1' : '0',
+                'is_encrypted' => false,
+                'description' => "Enable/disable {$meta['name']} provider for proposal generation",
+            ];
+
+            $defaults["{$u}_API_KEY"] = [
+                'default_value' => '',
+                'is_encrypted' => $meta['key_encrypted'],
+                'description' => "{$meta['name']} API key",
+            ];
+
+            $defaults["{$u}_MODEL"] = [
+                'default_value' => $meta['default_model'],
+                'is_encrypted' => false,
+                'description' => "{$meta['name']} model name",
+            ];
+
+            $defaults["{$u}_CONVERSATION_ID"] = [
+                'default_value' => $provider,
+                'is_encrypted' => false,
+                'description' => "{$meta['name']} conversation identifier",
+            ];
+
+            $defaults["AI_SYSTEM_PROMPT_{$u}"] = [
+                'default_value' => '',
+                'is_encrypted' => false,
+                'description' => "Custom system prompt for {$meta['name']} (leave empty for default)",
+            ];
+
+            $defaults["AI_PROMPT_TEMPLATE_{$u}"] = [
+                'default_value' => '',
+                'is_encrypted' => false,
+                'description' => "Custom proposal prompt template for {$meta['name']} (leave empty for default)",
+            ];
+
+            if (!empty($meta['extra_fields'])) {
+                foreach ($meta['extra_fields'] as $extraKey => $extraMeta) {
+                    $defaults[$extraKey] = [
+                        'default_value' => $extraMeta['default'],
+                        'is_encrypted' => $extraMeta['encrypted'],
+                        'description' => "{$meta['name']} {$extraMeta['label']}",
+                    ];
+                }
+            }
+        }
+
+        return $defaults;
         ];
     }
 
