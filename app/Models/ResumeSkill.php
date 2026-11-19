@@ -27,7 +27,7 @@ class ResumeSkill extends BaseModel
         'sort_order' => 'integer',
     ];
 
-    public function scopeActive(Builder $query): Builder
+    public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }

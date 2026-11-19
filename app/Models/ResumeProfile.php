@@ -42,7 +42,7 @@ class ResumeProfile extends BaseModel
         return implode(', ', array_filter([$this->city, $this->state, $this->country]));
     }
 
-    public function scopeActive(Builder $query): Builder
+    public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
