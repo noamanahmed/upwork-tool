@@ -522,6 +522,11 @@ EOT;
         $skillsList = $this->getRawMatchedSkills();
         $achievementsList = $this->getRawMatchedAchievements();
         $caseStudiesList = $this->getRawMatchedCaseStudies();
+        $experiencesList = $this->getRawMatchedExperiences();
+        $educationsList = $this->getRawEducations();
+        $certificationsList = $this->getRawCertifications();
+        $languagesList = $this->getRawLanguages();
+        $hobbiesList = $this->getRawHobbies();
 
         $resolvedProvider = $provider ?? $this->provider ?? 'default';
 
@@ -558,16 +563,28 @@ EOT;
             ],
             'freelancer' => [
                 'name' => $freelancerContext['name'],
-                'first_name' => $config['personal']['first_name'] ?? '',
-                'last_name' => $config['personal']['last_name'] ?? '',
+                'first_name' => $freelancerContext['first_name'] ?? ($config['personal']['first_name'] ?? ''),
+                'last_name' => $freelancerContext['last_name'] ?? ($config['personal']['last_name'] ?? ''),
+                'title' => $freelancerContext['title'] ?? ($config['personal']['title'] ?? ''),
+                'summary' => $freelancerContext['summary'] ?? '',
+                'city' => $freelancerContext['city'] ?? ($config['personal']['city'] ?? ''),
+                'country' => $freelancerContext['country'] ?? ($config['personal']['country'] ?? ''),
                 'skills' => $freelancerContext['skills'],
                 'skills_list' => $skillsList,
                 'achievements' => $freelancerContext['achievements'],
                 'achievements_list' => $achievementsList,
                 'experience' => $freelancerContext['experience'],
+                'experiences' => $experiencesList,
+                'education' => $freelancerContext['education'] ?? '',
+                'educations' => $educationsList,
                 'certifications' => $freelancerContext['certifications'],
+                'certifications_list' => $certificationsList,
                 'case_study' => $freelancerContext['case_study'],
                 'case_studies' => $caseStudiesList,
+                'languages' => $freelancerContext['languages'] ?? '',
+                'languages_list' => $languagesList,
+                'hobbies' => $freelancerContext['hobbies'] ?? '',
+                'hobbies_list' => $hobbiesList,
             ],
             'insights' => $insightsText,
             'insights_data' => $insightsData,
@@ -584,6 +601,7 @@ EOT;
             'freelancer_name' => $freelancerContext['name'],
             'freelancer_skills' => $freelancerContext['skills'],
             'freelancer_achievements' => $freelancerContext['achievements'],
+            'freelancer_experience' => $freelancerContext['experience'],
             'freelancer_case_study' => $freelancerContext['case_study'],
         ];
     }
@@ -595,6 +613,13 @@ EOT;
     */
     protected function buildContext(): array
     {
+        $profile = $this->getActiveResumeProfile();
+
+        if ($profile) {
+            return $this->buildContextFromProfile($profile);
+        }
+
+        // Fallback to static config
         $config = config('admin', []);
         $jobText = $this->normalizeKeywords(
             strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
@@ -609,11 +634,154 @@ EOT;
 
         return [
             'name' => trim($firstName . ' ' . $lastName),
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'title' => $config['personal']['title'] ?? '',
+            'city' => $config['personal']['city'] ?? '',
+            'country' => $config['personal']['country'] ?? '',
+            'summary' => is_array($config['introduction'] ?? null) ? implode(' ', $config['introduction']) : ($config['introduction'] ?? ''),
             'skills' => $this->formatSkills($skills),
             'achievements' => $this->formatAchievements($achievements),
             'experience' => '',
+            'education' => '',
             'certifications' => '',
+            'languages' => '',
+            'hobbies' => '',
             'case_study' => $this->formatCaseStudies($caseStudies),
+        ];
+    }
+
+    /**
+     * Get active ResumeProfile from database.
+     */
+    protected function getActiveResumeProfile(): ?ResumeProfile
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('resume_profiles')) {
+                return ResumeProfile::active()->with([
+                    'skills' => fn ($q) => $q->active(),
+                    'experiences' => fn ($q) => $q->active(),
+                    'educations' => fn ($q) => $q->active(),
+                    'certifications' => fn ($q) => $q->active(),
+                    'languages' => fn ($q) => $q->active(),
+                    'hobbies' => fn ($q) => $q->active(),
+                    'projects' => fn ($q) => $q->active(),
+                    'achievements' => fn ($q) => $q->active(),
+                ])->first();
+            }
+        } catch (\Throwable $e) {
+            // DB not migrated yet or table missing
+        }
+
+        return null;
+    }
+
+    /**
+     * Build context from active ResumeProfile.
+     */
+    protected function buildContextFromProfile(ResumeProfile $profile): array
+    {
+        $jobText = $this->normalizeKeywords(
+            strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
+        );
+
+        // 1. Relevant Skills
+        $matchedSkills = [];
+        foreach ($profile->skills as $skill) {
+            if (Str::contains($jobText, Str::lower($skill->name))) {
+                $matchedSkills[] = $skill->name;
+            }
+        }
+        if (empty($matchedSkills)) {
+            $matchedSkills = $profile->skills->where('is_featured', true)->pluck('name')->all();
+            if (empty($matchedSkills)) {
+                $matchedSkills = $profile->skills->take(5)->pluck('name')->all();
+            }
+        }
+
+        // 2. Achievements
+        $matchedAchievements = [];
+        foreach ($profile->achievements as $ach) {
+            if (Str::contains($jobText, Str::lower($ach->category))) {
+                $matchedAchievements[] = $ach->title;
+            }
+        }
+        if (empty($matchedAchievements)) {
+            $general = $profile->achievements->where('category', 'general')->pluck('title')->all();
+            $matchedAchievements = !empty($general) ? [$general[0]] : ($profile->achievements->first() ? [$profile->achievements->first()->title] : []);
+        }
+
+        // 3. Experience
+        $expText = '';
+        $matchedExp = $profile->experiences->first();
+        foreach ($profile->experiences as $exp) {
+            $expCombined = Str::lower($exp->role . ' ' . $exp->company . ' ' . json_encode($exp->highlights));
+            if (Str::contains($jobText, ['laravel', 'vue', 'fullstack', 'backend', 'api']) && Str::contains($expCombined, ['laravel', 'vue', 'api'])) {
+                $matchedExp = $exp;
+                break;
+            }
+        }
+        if ($matchedExp) {
+            $period = $matchedExp->is_current ? 'Present' : ($matchedExp->end_date ? $matchedExp->end_date->format('Y') : '');
+            $start = $matchedExp->start_date ? $matchedExp->start_date->format('Y') : '';
+            $expText = "{$matchedExp->role} at {$matchedExp->company} ({$start} - {$period})";
+        }
+
+        // 4. Certifications
+        $certText = '';
+        if ($profile->certifications->isNotEmpty()) {
+            $firstCert = $profile->certifications->first();
+            $certYear = $firstCert->issue_date ? $firstCert->issue_date->format('Y') : '';
+            $certText = "{$firstCert->name} ({$firstCert->issuer}" . ($certYear ? ", {$certYear}" : "") . ")";
+        }
+
+        // 5. Case Study / Project
+        $matchedProject = null;
+        foreach ($profile->projects as $project) {
+            foreach ((array) ($project->tags ?? []) as $tag) {
+                if (Str::contains($jobText, Str::lower($tag))) {
+                    $matchedProject = $project;
+                    break 2;
+                }
+            }
+        }
+        if (!$matchedProject && $profile->projects->isNotEmpty()) {
+            $matchedProject = $profile->projects->first();
+        }
+
+        $caseStudyText = $matchedProject
+            ? "Relevant Past Work:\n- {$matchedProject->title} → {$matchedProject->result}"
+            : '';
+
+        // 6. Education
+        $eduText = '';
+        if ($profile->educations->isNotEmpty()) {
+            $edu = $profile->educations->first();
+            $eduText = "{$edu->degree}" . ($edu->field_of_study ? " in {$edu->field_of_study}" : "") . " - {$edu->institution}";
+        }
+
+        // 7. Languages
+        $langText = $profile->languages->map(fn ($l) => "{$l->name} ({$l->proficiency})")->implode(', ');
+
+        // 8. Hobbies
+        $hobbyText = $profile->hobbies->pluck('name')->implode(', ');
+
+        return [
+            'name' => $profile->full_name,
+            'first_name' => $profile->first_name,
+            'last_name' => $profile->last_name,
+            'title' => $profile->title ?? '',
+            'city' => $profile->city ?? '',
+            'country' => $profile->country ?? '',
+            'summary' => $profile->summary ?? '',
+            'skills' => implode(', ', array_unique($matchedSkills)),
+            'achievements' => implode("\n", array_unique($matchedAchievements)),
+            'experience' => $expText,
+            'education' => $eduText,
+            'certifications' => $certText,
+            'languages' => $langText,
+            'hobbies' => $hobbyText,
+            'case_study' => $caseStudyText,
         ];
     }
 
@@ -667,6 +835,27 @@ EOT;
 
     public function getRawMatchedSkills(): array
     {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->skills->isNotEmpty()) {
+            $jobText = $this->normalizeKeywords(
+                strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
+            );
+            $matched = [];
+            foreach ($profile->skills as $skill) {
+                if (Str::contains($jobText, Str::lower($skill->name))) {
+                    $matched[] = $skill->name;
+                }
+            }
+            if (!empty($matched)) {
+                return array_values(array_unique($matched));
+            }
+            $featured = $profile->skills->where('is_featured', true)->pluck('name')->all();
+            if (!empty($featured)) {
+                return array_values($featured);
+            }
+            return $profile->skills->take(5)->pluck('name')->all();
+        }
+
         $config = config('admin', []);
         $skills = $config['skills'] ?? [];
         $jobText = $this->normalizeKeywords(
@@ -682,6 +871,24 @@ EOT;
 
     public function getRawMatchedAchievements(): array
     {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->achievements->isNotEmpty()) {
+            $jobText = $this->normalizeKeywords(
+                strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
+            );
+            $matched = [];
+            foreach ($profile->achievements as $ach) {
+                if (Str::contains($jobText, Str::lower($ach->category))) {
+                    $matched[] = $ach->title;
+                }
+            }
+            if (!empty($matched)) {
+                return array_values(array_unique($matched));
+            }
+            $general = $profile->achievements->where('category', 'general')->pluck('title')->all();
+            return !empty($general) ? [$general[0]] : [$profile->achievements->first()->title];
+        }
+
         $config = config('admin', []);
         $jobText = $this->normalizeKeywords(
             strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
@@ -691,11 +898,138 @@ EOT;
 
     public function getRawMatchedCaseStudies(): array
     {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->projects->isNotEmpty()) {
+            $jobText = $this->normalizeKeywords(
+                strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
+            );
+            $matched = [];
+            foreach ($profile->projects as $proj) {
+                foreach ((array) ($proj->tags ?? []) as $tag) {
+                    if (Str::contains($jobText, Str::lower($tag))) {
+                        $matched[] = [
+                            'title' => $proj->title,
+                            'problem' => $proj->problem,
+                            'solution' => $proj->solution,
+                            'result' => $proj->result,
+                            'tech_stack' => $proj->tech_stack,
+                            'tags' => $proj->tags,
+                        ];
+                        break;
+                    }
+                }
+            }
+            if (!empty($matched)) {
+                return array_slice($matched, 0, 3);
+            }
+            $first = $profile->projects->first();
+            return [[
+                'title' => $first->title,
+                'problem' => $first->problem,
+                'solution' => $first->solution,
+                'result' => $first->result,
+                'tech_stack' => $first->tech_stack,
+                'tags' => $first->tags,
+            ]];
+        }
+
         $config = config('admin', []);
         $jobText = $this->normalizeKeywords(
             strtolower(($this->job?->title ?? '') . ' ' . ($this->job?->description ?? ''))
         );
         return array_values($this->selectCaseStudies($config, $jobText));
+    }
+
+    public function getRawMatchedExperiences(): array
+    {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->experiences->isNotEmpty()) {
+            return $profile->experiences->map(function ($exp) {
+                return [
+                    'company' => $exp->company,
+                    'role' => $exp->role,
+                    'location' => $exp->location,
+                    'employment_type' => $exp->employment_type,
+                    'start_date' => $exp->start_date?->format('Y-m'),
+                    'end_date' => $exp->is_current ? 'Present' : $exp->end_date?->format('Y-m'),
+                    'is_current' => $exp->is_current,
+                    'highlights' => $exp->highlights ?? [],
+                    'technologies' => $exp->technologies ?? [],
+                ];
+            })->all();
+        }
+
+        $config = config('admin', []);
+        return $config['experiences'] ?? [];
+    }
+
+    public function getRawEducations(): array
+    {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->educations->isNotEmpty()) {
+            return $profile->educations->map(function ($edu) {
+                return [
+                    'institution' => $edu->institution,
+                    'degree' => $edu->degree,
+                    'field_of_study' => $edu->field_of_study,
+                    'start_date' => $edu->start_date?->format('Y'),
+                    'end_date' => $edu->is_current ? 'Present' : $edu->end_date?->format('Y'),
+                    'grade' => $edu->grade,
+                    'description' => $edu->description,
+                ];
+            })->all();
+        }
+
+        return [];
+    }
+
+    public function getRawCertifications(): array
+    {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->certifications->isNotEmpty()) {
+            return $profile->certifications->map(function ($cert) {
+                return [
+                    'name' => $cert->name,
+                    'issuer' => $cert->issuer,
+                    'issue_date' => $cert->issue_date?->format('Y'),
+                    'credential_url' => $cert->credential_url,
+                ];
+            })->all();
+        }
+
+        $config = config('admin', []);
+        return $config['certifications'] ?? [];
+    }
+
+    public function getRawLanguages(): array
+    {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->languages->isNotEmpty()) {
+            return $profile->languages->map(function ($lang) {
+                return [
+                    'name' => $lang->name,
+                    'proficiency' => $lang->proficiency,
+                ];
+            })->all();
+        }
+
+        $config = config('admin', []);
+        $langs = [];
+        foreach ($config['languages'] ?? [] as $name => $prof) {
+            $langs[] = ['name' => $name, 'proficiency' => $prof];
+        }
+        return $langs;
+    }
+
+    public function getRawHobbies(): array
+    {
+        $profile = $this->getActiveResumeProfile();
+        if ($profile && $profile->hobbies->isNotEmpty()) {
+            return $profile->hobbies->pluck('name')->all();
+        }
+
+        $config = config('admin', []);
+        return $config['hobbies'] ?? [];
     }
 
     protected function selectCaseStudies(array $config, string $jobText): array

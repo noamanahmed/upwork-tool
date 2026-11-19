@@ -118,7 +118,17 @@ Prompts and system instructions are fully customizable in System Settings under 
 - **Global & Per-Provider Prompts**: Configure default System Prompts and Proposal Prompt templates globally, or override either prompt specifically per provider (e.g., custom prompts for Gemini, OpenAI, Claude, Groq, etc.).
 - **Provider Management**: Enable or disable any AI provider on the fly via UI toggles; configure API keys (encrypted with AES-256 in DB), models, conversation IDs, and cloud endpoints (Azure, Bedrock, Ollama) directly from System Settings.
 
-Configuration in `config/services.php` → `services.ai`, `app/Models/Setting.php`, and `config/admin.php` for freelancer context (skills, achievements, case studies).
+### Resume & CV System
+
+Dedicated database tables and Filament CRUD resources under the **Resume & CV** navigation group:
+- **Models**: `ResumeProfile`, `ResumeExperience`, `ResumeEducation`, `ResumeSkill`, `ResumeCertification`, `ResumeLanguage`, `ResumeHobby`, `ResumeProject`, `ResumeAchievement`.
+- **Active State (`is_active`)**: All 9 resume tables include an `is_active` boolean column (default `true`) allowing individual items to be enabled/disabled from CV and proposal context.
+- **AI Proposal Dynamic Integration**: `AiJobProposal::buildContext()` and `buildTemplateContext()` query active resume records from the database (falling back gracefully to `config/admin.php` if tables are unseeded).
+  - Matches relevant skills, work experience, achievements, and case studies based on job description keywords.
+  - Dynamically populates Mustache template tags: `{{ freelancer.name }}`, `{{ freelancer.title }}`, `{{ freelancer.summary }}`, `{{ freelancer.skills }}`, `{{ freelancer.experience }}`, `{{ freelancer.education }}`, `{{ freelancer.certifications }}`, `{{ freelancer.languages }}`, `{{ freelancer.hobbies }}`, `{{ freelancer.achievements }}`, `{{ freelancer.case_study }}`, plus loop sections like `{{#freelancer.experiences}}`, `{{#freelancer.educations}}`, `{{#freelancer.case_studies}}`.
+- **Seeder**: `ResumeSeeder` imports existing profile, skills, experience, case studies, achievements, languages, and hobbies from `config/admin.php` into the database.
+
+Configuration in `config/services.php` → `services.ai`, `app/Models/Setting.php`, and database tables `resume_*` (fallback: `config/admin.php`).
 
 ### Environment Variables
 
