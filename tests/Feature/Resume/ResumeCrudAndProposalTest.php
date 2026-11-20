@@ -198,3 +198,23 @@ test('inactive resume items are excluded from proposal context', function () {
     $matchedSkills = explode(', ', $context['freelancer']['skills']);
     expect($matchedSkills)->not->toContain('Laravel');
 });
+
+test('resume resource forms construct without unresolvable closure exceptions', function () {
+    $this->seed(ResumeSeeder::class);
+
+    $resources = [
+        \App\Filament\Resources\ResumeAchievementResource::class,
+        \App\Filament\Resources\ResumeCertificationResource::class,
+        \App\Filament\Resources\ResumeEducationResource::class,
+        \App\Filament\Resources\ResumeExperienceResource::class,
+        \App\Filament\Resources\ResumeHobbyResource::class,
+        \App\Filament\Resources\ResumeLanguageResource::class,
+        \App\Filament\Resources\ResumeProjectResource::class,
+        \App\Filament\Resources\ResumeSkillResource::class,
+    ];
+
+    foreach ($resources as $resource) {
+        $form = $resource::form(new \Filament\Forms\Form(new class extends \Filament\Pages\Page {}));
+        expect($form->getComponents())->not->toBeEmpty();
+    }
+});

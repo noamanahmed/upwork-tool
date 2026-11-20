@@ -54,7 +54,7 @@ class ResumeAchievementResource extends Resource
 
                             Forms\Components\Select::make('profile_id')
                                 ->relationship('profile', 'first_name')
-                                ->getOptionLabelFromRecordUsing(fn ($r) => "{$r->first_name} {$r->last_name}")
+                                ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
                                 ->default(fn () => \App\Models\ResumeProfile::first()?->id),
                         ]),
 
