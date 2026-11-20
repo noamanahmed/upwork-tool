@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Queue;
 beforeEach(function () {
     Queue::fake();
     Setting::query()->delete();
+    (new \Database\Seeders\SettingSeeder())->run();
+    (new \Database\Seeders\ResumeSeeder())->run();
 });
 
 test('it renders default prompt template with job and context variables', function () {
@@ -45,7 +47,7 @@ test('it allows customizing the global prompt template via settings', function (
     Setting::set('AI_SYSTEM_PROMPT', 'System prompt for {{ job.title }}');
 
     expect($proposal->getPromptText())
-        ->toBe("Proposal for Laravel job 5002. Budget: . Freelancer: Noaman Ahmed");
+        ->toBe("Proposal for Laravel job 5002. Budget: . Freelancer: Nauman Ahmed");
 
     expect($proposal->getModelInstructions())
         ->toBe("System prompt for Laravel job 5002");
@@ -126,4 +128,25 @@ test('it dispatches proposals with dynamic template content', function () {
     expect($proposal)->not->toBeNull();
     expect($proposal->prompt)->toBe('Tailored for Laravel job 5004');
     expect($proposal->instructions)->toBe('Act as specialized Gemini agent for Laravel job 5004');
+});
+
+test('it does not fallback to hardcoded config or static methods when database records are missing', function () {
+    Setting::query()->delete();
+    \App\Models\ResumeProfile::query()->delete();
+
+    $job = upworkTestJob(5005);
+    $proposal = new AiJobProposal([
+        'job_id' => $job->id,
+        'provider' => 'gemini',
+    ]);
+    $proposal->setRelation('job', $job);
+
+    expect($proposal->getPromptText())->toBe('');
+    expect($proposal->getModelInstructions())->toBe('');
+
+    $context = $proposal->buildTemplateContext();
+    expect($context['freelancer']['name'])->toBe('');
+    expect($context['freelancer']['skills'])->toBe('');
+    expect($context['freelancer']['experience'])->toBe('');
+    expect($context['freelancer']['case_study'])->toBe('');
 });

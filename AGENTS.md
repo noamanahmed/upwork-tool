@@ -123,12 +123,14 @@ Prompts and system instructions are fully customizable in System Settings under 
 Dedicated database tables and Filament CRUD resources under the **Resume & CV** navigation group:
 - **Models**: `ResumeProfile`, `ResumeExperience`, `ResumeEducation`, `ResumeSkill`, `ResumeCertification`, `ResumeLanguage`, `ResumeHobby`, `ResumeProject`, `ResumeAchievement`.
 - **Active State (`is_active`)**: All 9 resume tables include an `is_active` boolean column (default `true`) allowing individual items to be enabled/disabled from CV and proposal context.
-- **AI Proposal Dynamic Integration**: `AiJobProposal::buildContext()` and `buildTemplateContext()` query active resume records from the database (falling back gracefully to `config/admin.php` if tables are unseeded).
+- **AI Proposal Dynamic Integration**: `AiJobProposal::buildContext()` and `buildTemplateContext()` query active resume records strictly from the database (no fallbacks to static config).
   - Matches relevant skills, work experience, achievements, and case studies based on job description keywords.
   - Dynamically populates Mustache template tags: `{{ freelancer.name }}`, `{{ freelancer.title }}`, `{{ freelancer.summary }}`, `{{ freelancer.skills }}`, `{{ freelancer.experience }}`, `{{ freelancer.education }}`, `{{ freelancer.certifications }}`, `{{ freelancer.languages }}`, `{{ freelancer.hobbies }}`, `{{ freelancer.achievements }}`, `{{ freelancer.case_study }}`, plus loop sections like `{{#freelancer.experiences}}`, `{{#freelancer.educations}}`, `{{#freelancer.case_studies}}`.
-- **Seeder**: `ResumeSeeder` imports existing profile, skills, experience, case studies, achievements, languages, and hobbies from `config/admin.php` into the database.
+- **Dedicated Seeders**:
+  - `ResumeSeeder`: Seeds all 9 resume tables (`resume_profiles`, `resume_experiences`, etc.) into the database.
+  - `SettingSeeder`: Seeds default AI system prompt and proposal prompt templates, along with provider configurations, into the `settings` table.
 
-Configuration in `config/services.php` → `services.ai`, `app/Models/Setting.php`, and database tables `resume_*` (fallback: `config/admin.php`).
+Configuration in `config/services.php` → `services.ai`, `app/Models/Setting.php`, and database tables `settings` and `resume_*`.
 
 ### Environment Variables
 

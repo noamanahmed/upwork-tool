@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\AiJobProposal;
 use App\Models\Setting;
 use Database\Seeders\SettingSeeder;
 use Filament\Actions\Action;
@@ -86,8 +85,8 @@ class ManageSettings extends Page implements HasForms
             'AI_PARALLEL_REQUEST_TIMEOUT' => Setting::getInt('AI_PARALLEL_REQUEST_TIMEOUT', 60),
 
             // Global Proposal Prompts (Mustache)
-            'AI_SYSTEM_PROMPT' => (string) (Setting::get('AI_SYSTEM_PROMPT') ?? AiJobProposal::defaultSystemPrompt()),
-            'AI_PROMPT_TEMPLATE' => (string) (Setting::get('AI_PROMPT_TEMPLATE') ?? AiJobProposal::defaultPromptTemplate()),
+            'AI_SYSTEM_PROMPT' => (string) (Setting::get('AI_SYSTEM_PROMPT') ?? ''),
+            'AI_PROMPT_TEMPLATE' => (string) (Setting::get('AI_PROMPT_TEMPLATE') ?? ''),
 
             // Translation
             'RAPID_API_TRANSLATION_API_KEY' => (string) $translationKey,
@@ -423,8 +422,8 @@ class ManageSettings extends Page implements HasForms
             'AI_RATE_LIMIT_INTERVAL' => ['encrypted' => false, 'default' => '60', 'desc' => 'AI rate limit interval in seconds'],
             'AI_MAX_PARALLEL_REQUESTS' => ['encrypted' => false, 'default' => '10', 'desc' => 'AI max parallel requests'],
             'AI_PARALLEL_REQUEST_TIMEOUT' => ['encrypted' => false, 'default' => '60', 'desc' => 'AI parallel request timeout in seconds'],
-            'AI_SYSTEM_PROMPT' => ['encrypted' => false, 'default' => AiJobProposal::defaultSystemPrompt(), 'desc' => 'Default system prompt instructions'],
-            'AI_PROMPT_TEMPLATE' => ['encrypted' => false, 'default' => AiJobProposal::defaultPromptTemplate(), 'desc' => 'Default proposal prompt template'],
+            'AI_SYSTEM_PROMPT' => ['encrypted' => false, 'default' => '', 'desc' => 'Default system prompt instructions'],
+            'AI_PROMPT_TEMPLATE' => ['encrypted' => false, 'default' => '', 'desc' => 'Default proposal prompt template'],
             'RAPID_API_TRANSLATION_API_KEY' => ['encrypted' => true, 'default' => '', 'desc' => 'RapidAPI Translation Key'],
         ];
 
