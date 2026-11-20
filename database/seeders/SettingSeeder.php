@@ -577,21 +577,28 @@ EOT;
      */
     public function run(): void
     {
-        foreach (static::defaults() as $key => $meta) {
-            $setting = Setting::where('key', $key)->orWhere('name', $key)->first();
-            if (!$setting) {
-                $setting = new Setting();
-                $setting->key = $key;
-                $setting->name = $key;
+        Setting::clearCache();
+
+        Setting::withoutEvents(function () {
+            foreach (static::defaults() as $key => $meta) {
+                $setting = Setting::where('key', $key)->orWhere('name', $key)->first();
+                if (!$setting) {
+                    $setting = new Setting();
+                    $setting->key = $key;
+                    $setting->name = $key;
+                }
+
+                $setting->default_value = $meta['default_value'];
+                $setting->is_encrypted = $meta['is_encrypted'];
+                $setting->description = $meta['description'];
+
+                // If an env value exists and no custom value is in DB, we can optionally leave value null
+                // so it dynamically falls back to .env, or if we want to initialize it:
+                $setting->save();
             }
+        });
 
-            $setting->default_value = $meta['default_value'];
-            $setting->is_encrypted = $meta['is_encrypted'];
-            $setting->description = $meta['description'];
-
-            // If an env value exists and no custom value is in DB, we can optionally leave value null
-            // so it dynamically falls back to .env, or if we want to initialize it:
-            $setting->save();
-        }
+        Setting::clearCache();
+        Setting::applyToConfig();
     }
 }

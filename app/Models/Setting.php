@@ -171,17 +171,36 @@ class Setting extends BaseModel
         'is_encrypted' => 'boolean',
     ];
 
+    /**
+     * In-memory cache for the current request / process lifecycle.
+     */
+    protected static ?array $runtimeCache = null;
+
     protected static function booted(): void
     {
         static::saved(function () {
-            Cache::forget('app_settings_map');
+            static::clearCache();
             static::applyToConfig();
         });
 
         static::deleted(function () {
-            Cache::forget('app_settings_map');
+            static::clearCache();
             static::applyToConfig();
         });
+    }
+
+    /**
+     * Clear both runtime in-memory cache and persistent framework cache.
+     */
+    public static function clearCache(): void
+    {
+        static::$runtimeCache = null;
+
+        try {
+            Cache::forget('app_settings_map');
+        } catch (\Throwable $e) {
+            // Ignore if cache service unavailable
+        }
     }
 
     /**
@@ -228,18 +247,31 @@ class Setting extends BaseModel
     public static function get(string $key, mixed $default = null): mixed
     {
         try {
-            $settings = Cache::rememberForever('app_settings_map', function () {
-                if (!Schema::hasTable('settings')) {
-                    return collect();
-                }
-                return static::all()->keyBy(fn ($item) => $item->key ?? $item->name);
-            });
+            if (static::$runtimeCache === null) {
+                static::$runtimeCache = Cache::rememberForever('app_settings_map', function () {
+                    if (!Schema::hasTable('settings')) {
+                        return [];
+                    }
 
-            $setting = $settings->get($key);
+                    return static::query()
+                        ->get(['key', 'name', 'value', 'default_value', 'is_encrypted'])
+                        ->mapWithKeys(function ($item) {
+                            $k = $item->key ?: $item->name;
+                            return [$k => [
+                                'value' => $item->value,
+                                'default_value' => $item->default_value,
+                                'is_encrypted' => (bool) $item->is_encrypted,
+                            ]];
+                        })
+                        ->all();
+                });
+            }
+
+            $setting = static::$runtimeCache[$key] ?? null;
             if ($setting) {
-                $val = $setting->value;
+                $val = $setting['value'];
                 if ($val !== null && $val !== '') {
-                    if ($setting->is_encrypted) {
+                    if ($setting['is_encrypted']) {
                         try {
                             return Crypt::decryptString($val);
                         } catch (\Throwable $e) {
@@ -249,8 +281,8 @@ class Setting extends BaseModel
                     return $val;
                 }
 
-                if ($setting->default_value !== null && $setting->default_value !== '') {
-                    return $setting->default_value;
+                if ($setting['default_value'] !== null && $setting['default_value'] !== '') {
+                    return $setting['default_value'];
                 }
             }
         } catch (\Throwable $e) {

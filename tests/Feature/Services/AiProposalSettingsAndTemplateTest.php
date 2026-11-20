@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Queue::fake();
+    Setting::clearCache();
     Setting::query()->delete();
     (new \Database\Seeders\SettingSeeder())->run();
     (new \Database\Seeders\ResumeSeeder())->run();
@@ -132,6 +133,7 @@ test('it dispatches proposals with dynamic template content', function () {
 
 test('it does not fallback to hardcoded config or static methods when database records are missing', function () {
     Setting::query()->delete();
+    Setting::clearCache();
     \App\Models\ResumeProfile::query()->delete();
 
     $job = upworkTestJob(5005);
